@@ -8,6 +8,7 @@ A static website of original retro-style browser games. No build step, no server
 |---|---|
 | **Stack Shack** | Platform game. Walk across ingredients to drop them onto plates and build four burgers while dodging angry produce. |
 | **Prairie Schooner** | Trail survival strategy. Lead a covered wagon from Missouri to Oregon or California in 1849. Saves progress in the browser. |
+| **Ashfall** | One-on-one fighting game with four elemental fighters, special moves, a CPU arcade ladder, two-player versus and gamepad support. |
 
 ```
 quarter-alley/
@@ -15,7 +16,8 @@ quarter-alley/
 ├── assets/favicon.svg
 └── games/
     ├── stack-shack/index.html        ← each game is fully self-contained
-    └── prairie-schooner/index.html
+    ├── prairie-schooner/index.html
+    └── ashfall/index.html
 ```
 
 ## Try it locally
