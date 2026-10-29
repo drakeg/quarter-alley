@@ -1,0 +1,10 @@
+name: Game idea or suggestion
+description: Suggest a new cabinet or an improvement.
+labels: [idea]
+body:
+  - type: textarea
+    id: idea
+    attributes:
+      label: Your idea
+    validations:
+      required: true

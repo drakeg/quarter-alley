@@ -1,0 +1,35 @@
+name: Bug report
+description: Something in a game or on the site isn't working right.
+title: "[Game] Short description"
+labels: [bug]
+body:
+  - type: dropdown
+    id: game
+    attributes:
+      label: Game
+      options:
+        - Arcade home page
+        - Stack Shack
+        - Prairie Schooner
+        - Ashfall
+        - Glitch Grid
+        - Sunset Circuit
+    validations:
+      required: true
+  - type: textarea
+    id: what
+    attributes:
+      label: What went wrong?
+      placeholder: In round 2 the timer froze at 12 and the fight never ended.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: How can we make it happen again?
+      placeholder: Steps, the level or fighter, what you pressed.
+  - type: input
+    id: browser
+    attributes:
+      label: Device and browser
+      placeholder: iPhone 15, Safari / MacBook, Chrome

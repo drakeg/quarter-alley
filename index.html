@@ -53,17 +53,38 @@ a.cabinet:hover,a.cabinet:focus-visible{transform:translateY(-3px);box-shadow:0 
 .cabinet.soon{border-style:dashed;opacity:.75}
 .cabinet.soon .marq{background:var(--line);color:var(--muted)}
 .cabinet.soon .screen{color:var(--muted);font-family:var(--mono);font-size:13px;letter-spacing:.14em}
+.topbar{padding-block:14px 0}
+.topbar .qa-chips{margin-left:auto}
+.head{display:flex;gap:28px;align-items:flex-end;justify-content:space-between;flex-wrap:wrap}
+.booth{display:grid;grid-template-columns:auto 1fr;gap:4px 14px;align-items:center;background:linear-gradient(180deg,#2a2e35,#16181c);border:1px solid #3a3f48;border-radius:12px;padding:14px 18px;box-shadow:inset 0 1px 0 rgba(255,255,255,.08),0 10px 24px rgba(0,0,0,.35);min-width:0;max-width:340px}
+.booth .coin{grid-row:span 3;line-height:0;filter:drop-shadow(0 4px 6px rgba(0,0,0,.5))}
+.booth b{font-family:var(--display);font-weight:400;font-size:30px;line-height:1;color:#f6d27a;font-variant-numeric:tabular-nums}
+.booth span{font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.booth p{margin:0;font-size:13px;color:var(--muted);line-height:1.4}
+footer a,footer button{color:var(--cream)}
+footer button{font:inherit;background:none;border:0;padding:0;cursor:pointer;text-decoration:underline}
 footer{border-top:1px solid var(--line);padding-block:18px;color:var(--muted);font-size:13px}
 @media (prefers-reduced-motion:reduce){a.cabinet{transition:none}a.cabinet:hover{transform:none}}
 </style>
 </head>
 <body>
+<div class="wrap topbar" data-qa-bar></div>
 <header class="wrap">
-  <div class="sign">
-    <p class="eyebrow">Insert coin · Free play</p>
-    <h1>Quarter Alley</h1>
+  <div class="head">
+    <div>
+      <div class="sign">
+        <p class="eyebrow">Insert token · Press start</p>
+        <h1>Quarter Alley</h1>
+      </div>
+      <p class="lede">Original games built in the spirit of the 1980s arcade. They run in any browser and work with a keyboard, a touch screen or a gamepad. Nothing to install.</p>
+    </div>
+    <aside class="booth" aria-label="Your tokens">
+      <div class="coin" id="boothCoin"></div>
+      <span>Your tokens</span>
+      <b id="boothN">10</b>
+      <p id="boothP">Each game costs 1 token. You get 10 free tokens every day.</p>
+    </aside>
   </div>
-  <p class="lede">Original games built in the spirit of the 1980s arcade. They run in any browser and work with a keyboard or a touch screen. Nothing to install.</p>
 </header>
 
 <main class="wrap">
@@ -71,8 +92,9 @@ footer{border-top:1px solid var(--line);padding-block:18px;color:var(--muted);fo
   <div class="cabinets" id="cabinets"></div>
 </main>
 
-<footer class="wrap">Quarter Alley Arcade · High scores are saved in your own browser.</footer>
+<footer class="wrap">Quarter Alley Arcade · Tokens and high scores are saved in your own browser. Something broken? <button type="button" id="footBug">Report a bug</button>.</footer>
 
+<script src="assets/arcade.js"></script>
 <script>
 /* To add a game: put it in games/<folder>/index.html and add an entry here. */
 const GAMES = [
@@ -142,6 +164,40 @@ const GAMES = [
       <circle cx="112" cy="46" r="6.5" fill="#9fb4c6"/><rect x="106" y="45" width="6" height="2" fill="#7fe8ff"/>
       <circle cx="78" cy="61" r="11" fill="url(#afball)"/>
     </svg>`
+  },
+  {
+    title: "Glitch Grid",
+    href: "games/glitch-grid/",
+    blurb: "Steer a cleanup drone through a neon maze and collect every data bit. Four glitches hunt you, each in its own way. Grab an overcharge core and turn the tables.",
+    tags: ["Maze", "1 player", "Keyboard & touch"],
+    art: `<svg viewBox="0 0 160 120" aria-hidden="true">
+      <rect width="160" height="120" fill="#04031a"/>
+      <g fill="none" stroke="#3b6bff" stroke-width="3" stroke-linecap="round" opacity=".55"><path d="M10 10H150V110H10Z"/><path d="M30 30H62V44H30Z"/><path d="M98 30H130V44H98Z"/><path d="M58 62H102V80H58Z"/><path d="M30 64V92"/><path d="M130 64V92"/></g>
+      <g fill="none" stroke="#bcd2ff" stroke-width="1.2" stroke-linecap="round"><path d="M10 10H150V110H10Z"/><path d="M30 30H62V44H30Z"/><path d="M98 30H130V44H98Z"/><path d="M58 62H102V80H58Z"/><path d="M30 64V92"/><path d="M130 64V92"/></g>
+      <g fill="#c9b8ff"><rect x="45" y="53" width="3" height="3" transform="rotate(45 46.5 54.5)"/><rect x="57" y="53" width="3" height="3" transform="rotate(45 58.5 54.5)"/><rect x="69" y="53" width="3" height="3" transform="rotate(45 70.5 54.5)"/><rect x="81" y="53" width="3" height="3" transform="rotate(45 82.5 54.5)"/><rect x="93" y="53" width="3" height="3" transform="rotate(45 94.5 54.5)"/><rect x="117" y="96" width="3" height="3" transform="rotate(45 118.5 97.5)"/><rect x="105" y="96" width="3" height="3" transform="rotate(45 106.5 97.5)"/></g>
+      <circle cx="20" cy="20" r="4" fill="#5dffc8"/>
+      <circle cx="34" cy="54" r="7" fill="#cffff0" stroke="#5dffc8" stroke-width="1.5"/><ellipse cx="37" cy="54" rx="2.6" ry="4" fill="#0b2a2a"/>
+      <path d="M118 88 l7 7 -1.5 7 -2.5-2 -3 2.5 -3-2.5 -2.5 2 -1.5-7z" fill="#ff4fd8"/><circle cx="115.5" cy="93" r="1.8" fill="#fff"/><circle cx="120.5" cy="93" r="1.8" fill="#fff"/>
+      <path d="M140 52 l7 7 -1.5 7 -2.5-2 -3 2.5 -3-2.5 -2.5 2 -1.5-7z" fill="#3ee8ff"/><circle cx="137.5" cy="57" r="1.8" fill="#fff"/><circle cx="142.5" cy="57" r="1.8" fill="#fff"/>
+    </svg>`
+  },
+  {
+    title: "Sunset Circuit",
+    href: "games/sunset-circuit/",
+    blurb: "Set a qualifying lap, then race seven rivals over three laps of a coastal circuit at golden hour. Hills, hairpins and a start-line light countdown.",
+    tags: ["Racing", "1 player", "Gamepad"],
+    art: `<svg viewBox="0 0 160 120" aria-hidden="true">
+      <defs><linearGradient id="scsky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2a1846"/><stop offset=".45" stop-color="#b8435a"/><stop offset=".9" stop-color="#ffb05c"/></linearGradient></defs>
+      <rect width="160" height="120" fill="url(#scsky)"/>
+      <circle cx="80" cy="60" r="16" fill="#fff1c8"/>
+      <path d="M0 64 Q30 48 58 60 T110 56 T160 62 V70 H0Z" fill="#5a2a46"/>
+      <rect y="66" width="160" height="54" fill="#8a8f3c"/>
+      <path d="M74 66 H86 L150 120 H10Z" fill="#d0383e"/>
+      <path d="M76 66 H84 L138 120 H22Z" fill="#6a6268"/>
+      <path d="M79.5 70 h1 l2 10 h-5z M78 86 h4 l3 14 h-10z" fill="#f5efe4"/>
+      <g transform="translate(80 104)"><rect x="-22" y="-2" width="8" height="10" fill="#141216"/><rect x="14" y="-2" width="8" height="10" fill="#141216"/><path d="M-16 -8 H16 Q21 -7 21 0 V6 H-21 V0 Q-21 -7 -16 -8Z" fill="#ff7a2a"/><rect x="-18" y="-15" width="36" height="4" fill="#1c2a4a"/><rect x="-3" y="-2" width="6" height="2" fill="#ff2a3a"/></g>
+      <g transform="translate(70 76) scale(.35)"><path d="M-16 -8 H16 Q21 -7 21 0 V6 H-21 V0 Q-21 -7 -16 -8Z" fill="#2f7bff"/><rect x="-18" y="-15" width="36" height="4" fill="#fff"/></g>
+    </svg>`
   }
 ];
 
@@ -157,6 +213,13 @@ const soon = document.createElement("div");
 soon.className = "cabinet soon";
 soon.innerHTML = `<div class="marq">Next cabinet</div><div class="screen">COMING SOON</div><div class="info"><p>A new game is being wired up for this spot.</p></div>`;
 host.appendChild(soon);
+if (window.Arcade) {
+  document.getElementById("boothCoin").innerHTML = Arcade.coinSVG(64);
+  const upd = () => { document.getElementById("boothN").textContent = Arcade.freePlay ? "Free" : Arcade.tokens(); };
+  upd(); Arcade.onChange(upd);
+  if (Arcade.freePlay) document.getElementById("boothP").textContent = "Free play is on. No tokens needed.";
+  document.getElementById("footBug").onclick = () => Arcade.reportBug();
+}
 document.getElementById("count").textContent = `${GAMES.length} ${GAMES.length === 1 ? "game" : "games"}`;
 </script>
 </body>

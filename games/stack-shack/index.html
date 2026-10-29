@@ -82,6 +82,7 @@ kbd{font-family:var(--mono);font-size:12px;background:var(--panel);border:1px so
   <br><kbd>←</kbd><kbd>→</kbd> walk · <kbd>↑</kbd><kbd>↓</kbd> climb · <kbd>Space</kbd> salt · <kbd>P</kbd> pause · <kbd>Enter</kbd> start</p>
 </div>
 
+<script src="../../assets/arcade.js"></script>
 <script>
 (()=>{
 const W=504,H=560;
@@ -156,7 +157,9 @@ document.querySelectorAll('.pad button').forEach(b=>{
 });
 document.addEventListener('visibilitychange',()=>{if(document.hidden&&state==='play')paused=true});
 function startOrContinue(){
-  if(state==='title'||state==='over'){level=1;score=0;lives=3;salt=5;buildLevel();state='play';paused=false;beep(523,.08);setTimeout(()=>beep(784,.12),90)}
+  if(state!=='title'&&state!=='over')return;
+  const go=()=>{level=1;score=0;lives=3;salt=5;buildLevel();state='play';paused=false;beep(523,.08);setTimeout(()=>beep(784,.12),90)};
+  if(window.Arcade)Arcade.insertCoin(go,{label:'Stack Shack · 1 token = 1 game'});else go();
 }
 
 /* ---------- update ---------- */
@@ -390,8 +393,8 @@ function draw(){
   if(state==='dying')drawChef(player.x,player.y,player.dir,0,false,(1.8-stateT)*9);
   else drawChef(player.x,player.y,player.dir,player.walk,!!player.lad,0);
   drawClouds();drawPops();
-  if(state==='title')panel(['STACK SHACK','Walk over every ingredient to drop it.','Build all four burgers. Dodge the produce.'],'PRESS ENTER OR TAP TO START');
-  else if(state==='over')panel(['KITCHEN CLOSED','Final score '+score,hi===score&&score>0?'New best!':'Best '+hi],'PRESS ENTER OR TAP TO PLAY AGAIN');
+  if(state==='title')panel(['STACK SHACK','Walk over every ingredient to drop it.','Build all four burgers. Dodge the produce.'],'PRESS ENTER OR TAP · 1 TOKEN');
+  else if(state==='over')panel(['KITCHEN CLOSED','Final score '+score,hi===score&&score>0?'New best!':'Best '+hi],'PRESS ENTER OR TAP · 1 TOKEN');
   else if(state==='clear'){ctx.textAlign='center';ctx.font='30px Bungee, "Arial Black", sans-serif';ctx.fillStyle='#f2b632';ctx.fillText('SHIFT '+level+' DONE',W/2,40)}
   else if(paused)panel(['PAUSED','Press P or tap to keep cooking.'],'');
 }

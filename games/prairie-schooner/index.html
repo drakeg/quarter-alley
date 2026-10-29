@@ -108,6 +108,7 @@ input:focus-visible{outline:2px solid var(--rust);outline-offset:1px}
     <aside class="journal"><h3>Trail journal</h3><ol id="journal"><li class="empty">Entries appear here once you set out.</li></ol></aside>
   </div>
 </div>
+<script src="../../assets/arcade.js"></script>
 <script>
 (()=>{
 'use strict';
@@ -259,7 +260,7 @@ function titleScreen(){
   ch.push({label:'Start a new journey',action:chooseBg});
   ch.push({label:'How the trail works',action:howTo});
   ch.push({label:'Trail ledger: best journeys',action:ledger});
-  show({kicker:'Spring 1849',title:'Two thousand miles to the Pacific',html:`<p>Outfit a wagon, choose your pace and rations, and lead your party across prairie, desert and mountains. At Fort Hall you will choose: the farmland of Oregon, or the California goldfields.</p><p class="note">Use the numbered choices, or press the number keys.</p>`,choices:ch});
+  show({kicker:'Spring 1849',title:'Two thousand miles to the Pacific',html:`<p>Outfit a wagon, choose your pace and rations, and lead your party across prairie, desert and mountains. At Fort Hall you will choose: the farmland of Oregon, or the California goldfields.</p><p class="note">Use the numbered choices, or press the number keys. A new journey costs 1 token; continuing a saved one is free.</p>`,choices:ch});
 }
 function howTo(){
   show({title:'How the trail works',html:`<p><b>Supplies.</b> Oxen pull the wagon; fewer than six slows you down. Each person eats 1 to 2 lb of food a day depending on rations. Clothing keeps people alive in the cold. Spare parts save days when the wagon breaks.</p><p><b>Health.</b> Hard pace, short rations, cold without clothing, and sickness all wear people down. Resting heals. A medicine kit cures one person’s illness.</p><p><b>Rivers.</b> Deeper than about 3 feet is risky to ford. Floating is a gamble on wide rivers. Ferries cost money but are safest.</p><p><b>Timing.</b> Leave too early and the grass is thin and the rivers high. Leave too late and snow will catch you in the mountains.</p><p><b>Score.</b> Survivors, their health and leftover supplies, multiplied by your background.</p>`,choices:[{label:'Back',action:titleScreen}]});
@@ -279,7 +280,7 @@ function chooseNames(bg){
 }
 function chooseMonth(bg,names){
   const opts=[[2,'March','Thin grass and high rivers, but the most time before snow.'],[3,'April','An early start. A good choice for a strong party.'],[4,'May','When most trains leave. Grass is up.'],[5,'June','Late. You will need to keep a quick pace.'],[6,'July','Very late. Snow is a real danger in the mountains.']];
-  show({kicker:'New journey · 3 of 4',title:'When will you leave Independence?',choices:opts.map(([m,l,s])=>({label:l,sub:s,action:()=>begin(bg,names,m)}))});
+  show({kicker:'New journey · 3 of 4',title:'When will you leave Independence?',choices:opts.map(([m,l,s])=>({label:l,sub:s,action:()=>{const go=()=>begin(bg,names,m);if(window.Arcade)Arcade.insertCoin(go,{label:'Prairie Schooner · 1 token = 1 journey'});else go()}}))});
 }
 function begin(bg,names,month){
   G={phase:'outfit',bg,money:BGS[bg].money,t:new Date(1849,month,1,12).getTime(),days:0,miles:0,li:0,route:null,cleared:-1,

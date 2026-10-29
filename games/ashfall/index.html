@@ -108,6 +108,7 @@ kbd{font-family:ui-monospace,Menlo,monospace;font-size:11px;background:rgba(255,
     <div><h3>Specials and gamepads</h3><p>Special alone or toward the foe, up + special, or back + special. Each fighter’s three moves are in the move list.</p><p>Gamepads work too: X punch, A kick, B special, bumpers block.</p></div>
   </div>
 </div>
+<script src="../../assets/arcade.js"></script>
 <script>
 (()=>{
 'use strict';
@@ -146,6 +147,7 @@ const SFX={
   ok:()=>{tone(.08,660,0,.14,'square');tone(.12,990,0,.14,'square',.07)}
 };
 const sfx=n=>{audio();SFX[n]&&SFX[n]()};
+const coin=(go,label)=>{if(window.Arcade)Arcade.insertCoin(go,{label:label||'Ashfall · 1 token = 1 credit'});else go()};
 // music: simple pattern scheduler
 let musNext=0,musStep=0,musTheme=0;
 const THEMES=[{bpm:112,root:55,scale:[0,3,5,7,10]},{bpm:100,root:49,scale:[0,2,3,7,8]},{bpm:124,root:58.27,scale:[0,3,5,6,7,10]},{bpm:96,root:41.2,scale:[0,3,5,7,8]}];
@@ -934,8 +936,8 @@ function title(){
   GAME.inFight=false;touchBar(false);menuBack=null;
   if(!GAME.demo||!GAME.f.length)startDemo();
   setMenu(`<div class="menu"><h1 class="logo">ASHFALL</h1><p class="sub">Tournament of the four elements</p>
-    <button class="mbtn" data-i="0">Arcade <small>Beat all three rivals</small></button>
-    <button class="mbtn" data-i="1">Versus <small>Two players, one keyboard or two gamepads</small></button>
+    <button class="mbtn" data-i="0">Arcade <small>Beat all three rivals · 1 token</small></button>
+    <button class="mbtn" data-i="1">Versus <small>Two players · 1 token</small></button>
     <button class="mbtn" data-i="2">Move list</button>
     <p class="hint">Arrow keys or WASD to choose, Enter to confirm. Gamepads work in menus too.</p></div>`,
     [()=>select('arcade'),()=>select('versus'),()=>moveList(title)]);
@@ -964,11 +966,10 @@ function select(mode){
     portraits=run;
   };
   const choose=c=>{
-    picks.push(c);
+    picks[step]=c;
     if(mode==='versus'&&step===0){step=1;render();return}
-    portraits=[];
-    if(mode==='arcade'){const rivals=CHARS.filter(x=>x!==c);GAME.ladder={me:c,rivals,stage:0};nextLadder()}
-    else{hideMenu();startMatch(picks[0],picks[1],{mode:'versus',ctrl:['human','human'],stage:picks[1].stage})}
+    if(mode==='arcade'){coin(()=>{portraits=[];const rivals=CHARS.filter(x=>x!==c);GAME.ladder={me:c,rivals,stage:0};nextLadder()},'Ashfall arcade · 1 token')}
+    else{coin(()=>{portraits=[];hideMenu();startMatch(picks[0],picks[1],{mode:'versus',ctrl:['human','human'],stage:picks[1].stage})},'Ashfall versus · 1 token')}
   };
   render();
 }
@@ -986,10 +987,10 @@ function endScreen(w,l){
     const L=GAME.ladder,won=w.side===0;
     if(won&&L.stage>=2){setMenu(`<div class="menu"><h1 class="logo" style="font-size:72px">CHAMPION</h1><p class="sub">${L.me.name} · ${L.me.title}</p><p class="hint" style="text-align:center">“${pick(L.me.win)}”</p><button class="mbtn" data-i="0">Play again</button><button class="mbtn" data-i="1">Title</button></div>`,[()=>select('arcade'),title]);return}
     if(won){L.stage++;nextLadder();return}
-    setMenu(`<div class="menu"><h2>Defeated</h2><p class="hint">${w.ch.name}: “${pick(w.ch.win)}”</p><button class="mbtn" data-i="0">Continue <small>Retry this fight</small></button><button class="mbtn" data-i="1">Title</button></div>`,[nextLadder,title]);return;
+    setMenu(`<div class="menu"><h2>Defeated</h2><p class="hint">${w.ch.name}: “${pick(w.ch.win)}”</p><button class="mbtn" data-i="0">Continue <small>Retry this fight · 1 token</small></button><button class="mbtn" data-i="1">Title</button></div>`,[()=>coin(nextLadder,'Continue · 1 token'),title]);return;
   }
-  setMenu(`<div class="menu"><h2>${w.side?'Player 2':'Player 1'} wins</h2><p class="hint">${w.ch.name}: “${pick(w.ch.win)}”</p><button class="mbtn" data-i="0">Rematch</button><button class="mbtn" data-i="1">Choose new fighters</button><button class="mbtn" data-i="2">Title</button></div>`,
-   [()=>{hideMenu();startMatch(w.side?l.ch:w.ch,w.side?w.ch:l.ch,{mode:'versus',ctrl:['human','human'],stage:stageIdx})},()=>select('versus'),title]);
+  setMenu(`<div class="menu"><h2>${w.side?'Player 2':'Player 1'} wins</h2><p class="hint">${w.ch.name}: “${pick(w.ch.win)}”</p><button class="mbtn" data-i="0">Rematch <small>1 token</small></button><button class="mbtn" data-i="1">Choose new fighters</button><button class="mbtn" data-i="2">Title</button></div>`,
+   [()=>coin(()=>{hideMenu();startMatch(w.side?l.ch:w.ch,w.side?w.ch:l.ch,{mode:'versus',ctrl:['human','human'],stage:stageIdx})},'Rematch · 1 token'),()=>select('versus'),title]);
 }
 function moveList(back){
   setMenu(`<div class="menu wide"><h2>Move list</h2><p class="hint">Everyone: ${NORMAL_NAMES}. Block (hold) stops most attacks; crouch-block stops sweeps, stand-block stops jump attacks.</p><div class="moves">${CHARS.map(c=>`<div><h3>${c.name} <small style="font-size:16px;color:var(--muted)">${c.title}</small></h3><p><b>Special</b> (or toward + Special): ${c.sp.f.name}</p><p><b>Up + Special</b>: ${c.sp.u.name}</p><p><b>Back + Special</b>: ${c.sp.b.name}</p></div>`).join('')}</div><button class="mbtn" data-i="0">Back</button></div>`,[back]);
