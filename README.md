@@ -68,6 +68,10 @@ Any static host works. Upload the **contents** of this folder as the site root.
 
 HTTPS is recommended (all the hosts above provide it free).
 
+## Originality rule
+
+Every game here is an original design: its own name, characters, story and art. Classic games, films and shows can inspire the gameplay, but their names, characters and catchphrases must never appear anywhere in the code, the page text, the README or the roadmap.
+
 ## Adding another game
 
 1. Create `games/<new-game>/index.html` (keep each game self-contained in its folder).

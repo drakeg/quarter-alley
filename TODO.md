@@ -1,6 +1,6 @@
 # Quarter Alley · To Do
 
-The running roadmap for the arcade. Check items off as they ship. Games are original designs inspired by arcade classics: their own names, characters and art.
+The running roadmap for the arcade. Check items off as they ship. Every game is an original design with its own name, characters and art. Never use the names, characters or catchphrases of existing games, films, shows or brands anywhere in the code or documentation.
 
 ## Games
 
@@ -15,16 +15,16 @@ The running roadmap for the arcade. Check items off as they ship. Games are orig
 - [x] **Iron Treads** – top-down tank battles and 2-player duel
 - [x] **Starfall** – defend six towns from a meteor shower
 - [x] **Ridgeline** – first-person 3D tank battle with radar
-- [x] **Driftrock** – drifting ship blasting space rocks that break apart (Asteroids-style)
-- [x] **Lifeline** – side-scrolling rescue shooter with a world scanner (Defender-style)
-- [x] **Canopy Run** – jungle explorer: vines, tar pits, crocodiles, tunnels and treasure (Pitfall-style)
+- [x] **Driftrock** – drifting ship blasting space rocks that break apart
+- [x] **Lifeline** – side-scrolling rescue shooter with a world scanner
+- [x] **Canopy Run** – jungle explorer: vines, tar pits, crocodiles, tunnels and treasure
 
 ### Up next
-- [ ] **Hive Swarm** – fixed shooter vs diving formations of mechanical bugs (Galaga-style)
-- [ ] **Brickwave** – paddle, ball and bricks with power-ups (Breakout-style)
-- [ ] **Girder Gang** – climb girders and dodge barrels to the top (Donkey Kong-style)
-- [ ] **Flipside** – full pinball table with flippers, bumpers, ramps and multiball (pinball)
-- [ ] **Roll Alley** – roll balls up the lane into scoring rings, win prize tickets (skee-ball)
+- [ ] **Hive Swarm** – fixed shooter vs diving formations of mechanical bugs
+- [ ] **Brickwave** – paddle, ball and bricks with power-ups
+- [ ] **Girder Gang** – climb girders and dodge rolling barrels to reach the top
+- [ ] **Flipside** – full pinball table with flippers, bumpers, ramps and multiball
+- [ ] **Roll Alley** – roll balls up an inclined lane into scoring rings and win prize tickets
 
 ### Inspired by movies and TV (original stories, no licensed names)
 - [ ] **Tower Siege** – one off-duty hero, one skyscraper taken over on a holiday night; fight floor by floor to the roof (action-movie siege)
@@ -32,14 +32,14 @@ The running roadmap for the arcade. Check items off as they ship. Games are orig
 - [ ] **Leapwise** – wake up in a stranger's life in a different decade; put one thing right before you leap again (time-hop adventure)
 
 ### Later
-- [ ] **Burrow Bash** – tunnel through a garden and pop pests (Dig Dug-style)
-- [ ] **Cube Hop** – hop a pyramid of cubes to change their colors (Q*bert-style)
-- [ ] **Skyknights** – flying jousts, great for two players (Joust-style)
-- [ ] **Soft Landing** – land a craft gently with limited fuel (Lunar Lander-style)
-- [ ] **Lightline** – light-trail duels for 2–4 players (light cycles / Snake)
-- [ ] **Blast Block** – bomb-maze party game for up to 4 gamepads (Bomberman-style)
-- [ ] **Twin Fury** – twin-stick arena survival (Robotron-style)
-- [ ] **Tube Rider** – shoot down a 3D tube (Tempest-style)
+- [ ] **Burrow Bash** – tunnel through a garden and pop pests
+- [ ] **Cube Hop** – hop a pyramid of cubes to change their colors
+- [ ] **Skyknights** – riders on flying mounts clash in the air, great for two players
+- [ ] **Soft Landing** – land a craft gently with limited fuel
+- [ ] **Lightline** – light-trail duels for 2–4 players
+- [ ] **Blast Block** – bomb-maze party game for up to 4 gamepads
+- [ ] **Twin Fury** – twin-stick arena survival
+- [ ] **Tube Rider** – shoot your way down a 3D tube
 
 ## Platform
 
