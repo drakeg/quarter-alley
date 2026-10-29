@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Quarter Alley Arcade</title>
+<meta name="description" content="Quarter Alley: original browser games inspired by the golden age of the arcade. Free to play, no installs.">
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bungee&family=Bungee+Shade&family=Chivo:wght@400;600&family=Chivo+Mono:wght@500&display=swap">
+<style>
+/* Layout: a marquee sign over a row of cabinets. Night-arcade look, single theme by choice. */
+:root{
+  --bg:#0e1828;
+  --floor:#152338;
+  --cab:#1b2d47;
+  --line:#2d4769;
+  --cream:#f3e6c8;
+  --cherry:#e2483d;
+  --mustard:#f2b632;
+  --muted:#8ea3bb;
+  --display:"Bungee","Arial Black",Impact,sans-serif;
+  --shade:"Bungee Shade","Bungee","Arial Black",sans-serif;
+  --body:"Chivo","Segoe UI",system-ui,sans-serif;
+  --mono:"Chivo Mono",ui-monospace,Menlo,monospace;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--cream)}
+body{font-family:var(--body);font-size:15px;line-height:1.55;min-height:100vh;display:flex;flex-direction:column;
+  background-image:linear-gradient(180deg,transparent 0,transparent 60%,var(--floor) 100%),repeating-linear-gradient(90deg,rgba(255,255,255,.018) 0 1px,transparent 1px 48px)}
+.wrap{width:100%;max-width:1040px;margin:0 auto;padding-left:max(20px,env(safe-area-inset-left,0px));padding-right:max(20px,env(safe-area-inset-right,0px))}
+header{padding-block:48px 28px}
+.sign{display:inline-block;border:2px solid var(--line);border-radius:10px;padding:18px 26px 16px;background:linear-gradient(180deg,#14233a,#0f1a2b);box-shadow:0 0 0 6px var(--bg),0 0 0 8px var(--line)}
+.eyebrow{font-family:var(--mono);font-size:12px;letter-spacing:.2em;text-transform:uppercase;color:var(--mustard);margin:0 0 6px}
+h1{font-family:var(--shade);font-weight:400;font-size:clamp(34px,8vw,64px);line-height:1;margin:0;color:var(--cherry);text-wrap:balance}
+.lede{max-width:56ch;color:var(--muted);margin:22px 0 0;font-size:16px}
+main{flex:1;padding-block:12px 56px}
+.row-label{display:flex;align-items:baseline;justify-content:space-between;gap:12px;border-bottom:1px solid var(--line);padding-bottom:8px;margin-bottom:22px}
+.row-label h2{font-family:var(--display);font-weight:400;font-size:18px;letter-spacing:.04em;margin:0}
+.row-label span{font-family:var(--mono);font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
+.cabinets{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:22px}
+.cabinet{display:flex;flex-direction:column;background:var(--cab);border:1px solid var(--line);border-radius:12px 12px 6px 6px;overflow:hidden;color:inherit;text-decoration:none;transition:transform .15s ease,box-shadow .15s ease}
+a.cabinet:hover,a.cabinet:focus-visible{transform:translateY(-3px);box-shadow:0 12px 30px rgba(0,0,0,.4),0 0 0 2px var(--mustard);outline:none}
+.marq{font-family:var(--display);font-size:20px;text-align:center;padding:10px 12px;background:var(--cherry);color:var(--cream);letter-spacing:.03em}
+.screen{aspect-ratio:4/3;background:#101c2c;display:grid;place-items:center;border-block:6px solid #0b1320;max-width:100%}
+.screen svg{width:100%;height:100%;display:block}
+.info{padding:14px 16px 16px;display:flex;flex-direction:column;gap:8px;flex:1}
+.info p{margin:0;color:var(--muted);font-size:14px}
+.meta{display:flex;flex-wrap:wrap;gap:6px;margin-top:auto;padding-top:4px}
+.chip{font-family:var(--mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase;border:1px solid var(--line);border-radius:999px;padding:2px 9px;color:var(--cream)}
+.chip.play{background:var(--mustard);border-color:var(--mustard);color:#1b1408}
+.cabinet.soon{border-style:dashed;opacity:.75}
+.cabinet.soon .marq{background:var(--line);color:var(--muted)}
+.cabinet.soon .screen{color:var(--muted);font-family:var(--mono);font-size:13px;letter-spacing:.14em}
+footer{border-top:1px solid var(--line);padding-block:18px;color:var(--muted);font-size:13px}
+@media (prefers-reduced-motion:reduce){a.cabinet{transition:none}a.cabinet:hover{transform:none}}
+</style>
+</head>
+<body>
+<header class="wrap">
+  <div class="sign">
+    <p class="eyebrow">Insert coin · Free play</p>
+    <h1>Quarter Alley</h1>
+  </div>
+  <p class="lede">Original games built in the spirit of the 1980s arcade. They run in any browser and work with a keyboard or a touch screen. Nothing to install.</p>
+</header>
+
+<main class="wrap">
+  <div class="row-label"><h2>On the floor</h2><span id="count"></span></div>
+  <div class="cabinets" id="cabinets"></div>
+</main>
+
+<footer class="wrap">Quarter Alley Arcade · High scores are saved in your own browser.</footer>
+
+<script>
+/* To add a game: put it in games/<folder>/index.html and add an entry here. */
+const GAMES = [
+  {
+    title: "Stack Shack",
+    href: "games/stack-shack/",
+    blurb: "Walk across every ingredient to drop it onto the plates. Build four burgers while a jalapeño, an onion and a radish chase you up and down the ladders.",
+    tags: ["Platform", "1 player", "Keyboard & touch"],
+    art: `<svg viewBox="0 0 160 120" aria-hidden="true">
+      <rect width="160" height="120" fill="#101c2c"/>
+      <g fill="#3d7aa5"><rect x="0" y="36" width="160" height="3"/><rect x="0" y="70" width="160" height="3"/><rect x="0" y="104" width="160" height="3"/></g>
+      <g fill="#e9dcbd"><rect x="14" y="36" width="2" height="71"/><rect x="22" y="36" width="2" height="71"/><rect x="136" y="36" width="2" height="38"/><rect x="144" y="36" width="2" height="38"/></g>
+      <path d="M46 36 C46 24 82 24 82 36 Z" fill="#e89a4c"/>
+      <rect x="46" y="64" width="36" height="6" rx="3" fill="#6b3a21"/>
+      <rect x="45" y="99" width="38" height="5" rx="2" fill="#c9773a"/>
+      <rect x="96" y="65" width="34" height="4" fill="#f6c63c"/>
+      <rect x="96" y="31" width="34" height="5" fill="#4fae43"/>
+      <g transform="translate(112 104)"><rect x="-4" y="-12" width="8" height="8" rx="2" fill="#f7f4ee"/><circle cy="-15" r="3.2" fill="#f0c7a0"/><circle cx="-2" cy="-21" r="2.6" fill="#fff"/><circle cx="1.5" cy="-22" r="2.8" fill="#fff"/></g>
+      <g transform="translate(66 70)"><ellipse cy="-8" rx="4.5" ry="7" fill="#3f9a3a"/><circle cx="-1.6" cy="-9" r="1.4" fill="#fff"/><circle cx="1.6" cy="-9" r="1.4" fill="#fff"/></g>
+      <g transform="translate(30 36)"><circle cy="-7" r="5.5" fill="#d9374f"/><circle cx="-1.8" cy="-8" r="1.3" fill="#fff"/><circle cx="1.8" cy="-8" r="1.3" fill="#fff"/></g>
+    </svg>`
+  }
+];
+
+const host = document.getElementById("cabinets");
+GAMES.forEach(g => {
+  const a = document.createElement("a");
+  a.className = "cabinet"; a.href = g.href;
+  a.innerHTML = `<div class="marq">${g.title}</div><div class="screen">${g.art}</div>
+    <div class="info"><p>${g.blurb}</p><div class="meta"><span class="chip play">Play</span>${g.tags.map(t => `<span class="chip">${t}</span>`).join("")}</div></div>`;
+  host.appendChild(a);
+});
+const soon = document.createElement("div");
+soon.className = "cabinet soon";
+soon.innerHTML = `<div class="marq">Next cabinet</div><div class="screen">COMING SOON</div><div class="info"><p>A new game is being wired up for this spot.</p></div>`;
+host.appendChild(soon);
+document.getElementById("count").textContent = `${GAMES.length} ${GAMES.length === 1 ? "game" : "games"}`;
+</script>
+</body>
+</html>
