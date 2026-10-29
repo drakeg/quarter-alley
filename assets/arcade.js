@@ -18,7 +18,7 @@
     supabaseUrl: '',
     supabaseAnonKey: ''
   };
-  const GAMES = ['Arcade home page', 'Stack Shack', 'Prairie Schooner', 'Ashfall', 'Glitch Grid', 'Sunset Circuit', 'Spore Storm', 'Rascal Road', 'Iron Treads', 'Starfall', 'Ridgeline', 'Driftrock', 'Lifeline', 'Accounts / sign-in', 'Leaderboards'];
+  const GAMES = ['Arcade home page', 'Stack Shack', 'Prairie Schooner', 'Ashfall', 'Glitch Grid', 'Sunset Circuit', 'Spore Storm', 'Rascal Road', 'Iron Treads', 'Starfall', 'Ridgeline', 'Driftrock', 'Lifeline', 'Canopy Run', 'Accounts / sign-in', 'Leaderboards'];
   const KEY = 'qa-wallet';
   const freePlay = CONFIG.freePlay || /[?&]freeplay\b/.test(location.search);
   const listeners = [];
@@ -448,7 +448,7 @@
     get accountsOn() { return acct.configured; }, get signedIn() { return signedIn(); }, get playerName() { return signedIn() ? displayName() : null; },
     games: [
       ['stack-shack', 'Stack Shack'], ['prairie-schooner', 'Prairie Schooner'], ['glitch-grid', 'Glitch Grid'], ['sunset-circuit', 'Sunset Circuit'],
-      ['spore-storm', 'Spore Storm'], ['rascal-road', 'Rascal Road'], ['iron-treads', 'Iron Treads'], ['starfall', 'Starfall'], ['ridgeline', 'Ridgeline'], ['driftrock', 'Driftrock'], ['lifeline', 'Lifeline']
+      ['spore-storm', 'Spore Storm'], ['rascal-road', 'Rascal Road'], ['iron-treads', 'Iron Treads'], ['starfall', 'Starfall'], ['ridgeline', 'Ridgeline'], ['driftrock', 'Driftrock'], ['lifeline', 'Lifeline'], ['canopy-run', 'Canopy Run']
     ]
   };
 })();

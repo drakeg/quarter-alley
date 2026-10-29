@@ -18,6 +18,7 @@ A static website of original retro-style browser games. No build step, no server
 | **Ridgeline** | First-person 3D tank combat with radar, built with three.js. |
 | **Driftrock** | Space shooter. A drifting ship splits glowing rocks into smaller pieces; saucers hunt you. |
 | **Lifeline** | Side-scrolling rescue shooter. Stop snatchers carrying off colonists and catch them as they fall. |
+| **Canopy Run** | Jungle adventure. Vines, tar pits, crocodiles, tunnels and sixteen treasures against a ten-minute clock. |
 
 ```
 quarter-alley/
@@ -37,7 +38,8 @@ quarter-alley/
     ├── starfall/index.html
     ├── ridgeline/index.html
     ├── driftrock/index.html
-    └── lifeline/index.html
+    ├── lifeline/index.html
+    └── canopy-run/index.html
 ├── leaderboards/index.html           ← public high scores (needs accounts)
 ├── supabase/schema.sql               ← database for accounts, tokens and scores
 ├── docs/LOGIN.md                     ← how to switch on accounts

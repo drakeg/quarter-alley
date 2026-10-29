@@ -17,14 +17,19 @@ The running roadmap for the arcade. Check items off as they ship. Games are orig
 - [x] **Ridgeline** – first-person 3D tank battle with radar
 - [x] **Driftrock** – drifting ship blasting space rocks that break apart (Asteroids-style)
 - [x] **Lifeline** – side-scrolling rescue shooter with a world scanner (Defender-style)
+- [x] **Canopy Run** – jungle explorer: vines, tar pits, crocodiles, tunnels and treasure (Pitfall-style)
 
 ### Up next
-- [ ] **Canopy Run** – jungle explorer swinging on vines over pits, crocodiles and rolling logs to grab treasure (Pitfall-style)
 - [ ] **Hive Swarm** – fixed shooter vs diving formations of mechanical bugs (Galaga-style)
 - [ ] **Brickwave** – paddle, ball and bricks with power-ups (Breakout-style)
 - [ ] **Girder Gang** – climb girders and dodge barrels to the top (Donkey Kong-style)
 - [ ] **Flipside** – full pinball table with flippers, bumpers, ramps and multiball (pinball)
 - [ ] **Roll Alley** – roll balls up the lane into scoring rings, win prize tickets (skee-ball)
+
+### Inspired by movies and TV (original stories, no licensed names)
+- [ ] **Tower Siege** – one off-duty hero, one skyscraper taken over on a holiday night; fight floor by floor to the roof (action-movie siege)
+- [ ] **Trench Runner** – 3D space-fighter run down a fortress trench to hit a single exhaust port (1983 sit-down space-battle style)
+- [ ] **Leapwise** – wake up in a stranger's life in a different decade; put one thing right before you leap again (time-hop adventure)
 
 ### Later
 - [ ] **Burrow Bash** – tunnel through a garden and pop pests (Dig Dug-style)

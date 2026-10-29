@@ -21,6 +21,7 @@ body:
         - Ridgeline
         - Driftrock
         - Lifeline
+        - Canopy Run
         - Accounts / sign-in
         - Leaderboards
     validations:
