@@ -11,6 +11,10 @@ A static website of original retro-style browser games. No build step, no server
 | **Ashfall** | One-on-one fighting game with four elemental fighters, special moves, a CPU arcade ladder, two-player versus and gamepad support. |
 | **Glitch Grid** | Maze chase. Steer a cleanup drone through a neon maze, collect the data bits and dodge four glitches with different hunting styles. |
 | **Sunset Circuit** | Pseudo-3D racer. One qualifying lap sets your grid spot, then three laps against seven CPU rivals. |
+| **Spore Storm** | Shooter. A firefly fires up through a field of glowing spores at a segmented crawler that splits when hit. |
+| **Rascal Road** | Crossing game. Hop a raccoon across traffic and a creek to fill five dens before the timer runs out. |
+| **Iron Treads** | Top-down tanks with destructible brick. Campaign of 20-tank stages defending a beacon, plus a 2-player duel. |
+| **Starfall** | Defense. Fire flares from three batteries to burst meteors before they hit six seaside towns. |
 
 ```
 quarter-alley/
@@ -23,7 +27,11 @@ quarter-alley/
     ├── prairie-schooner/index.html
     ├── ashfall/index.html
     ├── glitch-grid/index.html
-    └── sunset-circuit/index.html
+    ├── sunset-circuit/index.html
+    ├── spore-storm/index.html
+    ├── rascal-road/index.html
+    ├── iron-treads/index.html
+    └── starfall/index.html
 ```
 
 ## Try it locally

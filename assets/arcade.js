@@ -12,7 +12,7 @@
     freePlay: false,      // true = no tokens needed anywhere (also: add ?freeplay to a URL)
     repo: 'drakeg/quarter-alley'
   };
-  const GAMES = ['Arcade home page', 'Stack Shack', 'Prairie Schooner', 'Ashfall', 'Glitch Grid', 'Sunset Circuit'];
+  const GAMES = ['Arcade home page', 'Stack Shack', 'Prairie Schooner', 'Ashfall', 'Glitch Grid', 'Sunset Circuit', 'Spore Storm', 'Rascal Road', 'Iron Treads', 'Starfall'];
   const KEY = 'qa-wallet';
   const freePlay = CONFIG.freePlay || /[?&]freeplay\b/.test(location.search);
 

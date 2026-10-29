@@ -14,6 +14,10 @@ body:
         - Ashfall
         - Glitch Grid
         - Sunset Circuit
+        - Spore Storm
+        - Rascal Road
+        - Iron Treads
+        - Starfall
     validations:
       required: true
   - type: textarea
