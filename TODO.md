@@ -15,9 +15,9 @@ The running roadmap for the arcade. Check items off as they ship. Games are orig
 - [x] **Iron Treads** – top-down tank battles and 2-player duel
 - [x] **Starfall** – defend six towns from a meteor shower
 - [x] **Ridgeline** – first-person 3D tank battle with radar
+- [x] **Driftrock** – drifting ship blasting space rocks that break apart (Asteroids-style)
 
 ### Up next
-- [ ] **Driftrock** – drifting ship blasting space rocks that break apart (Asteroids-style)
 - [ ] **Hive Swarm** – fixed shooter vs diving formations of mechanical bugs (Galaga-style)
 - [ ] **Brickwave** – paddle, ball and bricks with power-ups (Breakout-style)
 - [ ] **Girder Gang** – climb girders and dodge barrels to the top (Donkey Kong-style)

@@ -16,6 +16,7 @@ A static website of original retro-style browser games. No build step, no server
 | **Iron Treads** | Top-down tanks with destructible brick. Campaign of 20-tank stages defending a beacon, plus a 2-player duel. |
 | **Starfall** | Defense. Fire flares from three batteries to burst meteors before they hit six seaside towns. |
 | **Ridgeline** | First-person 3D tank combat with radar, built with three.js. |
+| **Driftrock** | Space shooter. A drifting ship splits glowing rocks into smaller pieces; saucers hunt you. |
 
 ```
 quarter-alley/
@@ -33,7 +34,8 @@ quarter-alley/
     ├── rascal-road/index.html
     ├── iron-treads/index.html
     ├── starfall/index.html
-    └── ridgeline/index.html
+    ├── ridgeline/index.html
+    └── driftrock/index.html
 ├── leaderboards/index.html           ← public high scores (needs accounts)
 ├── supabase/schema.sql               ← database for accounts, tokens and scores
 ├── docs/LOGIN.md                     ← how to switch on accounts

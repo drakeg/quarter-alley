@@ -1,0 +1,262 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Driftrock</title>
+<meta name="description" content="Driftrock: pilot a drifting scout ship through a field of tumbling ice rocks that crack apart when hit. Watch out for saucers.">
+<link rel="icon" href="../../assets/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Michroma&family=Sora:wght@400;600&display=swap">
+<style>
+/* Layout: a wide deep-space viewport with HUD drawn in canvas, flight notes below. Single dark theme by design. */
+:root{
+  --bg:#04050b;
+  --frame:#0d1020;
+  --line:#22284a;
+  --text:#e8ecff;
+  --muted:#9097c4;
+  --ice:#8fe3ff;       /* accent: rock glow */
+  --amber:#ffb84a;
+  --display:"Michroma","Arial Black",sans-serif;
+  --body:"Sora","Segoe UI",system-ui,sans-serif;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--text)}
+body{font-family:var(--body);font-size:15px;line-height:1.5}
+.wrap{max-width:1100px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:16px 32px;display:flex;flex-direction:column;gap:14px}
+.back{font-size:12px;color:var(--muted);text-decoration:none;letter-spacing:.12em;text-transform:uppercase}
+.back:hover,.back:focus-visible{color:var(--ice)}
+.title{display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap}
+h1{font-family:var(--display);font-weight:400;font-size:clamp(26px,5vw,40px);line-height:1;margin:0;letter-spacing:.12em;color:var(--ice);text-shadow:0 0 18px rgba(143,227,255,.45)}
+.tag{margin:0;color:var(--muted)}
+.stage{position:relative;width:100%;aspect-ratio:8/5;border-radius:10px;overflow:hidden;background:#000;box-shadow:0 0 0 1px var(--line),0 20px 60px rgba(0,0,0,.6);max-width:100%}
+.stage:fullscreen{border-radius:0;aspect-ratio:auto}
+canvas{display:block;width:100%;height:100%;touch-action:none}
+.touch{position:absolute;inset:auto 0 0 0;display:none;justify-content:space-between;align-items:flex-end;padding:0 max(10px,env(safe-area-inset-left,0px)) max(10px,env(safe-area-inset-bottom,0px));pointer-events:none}
+.touch.on{display:flex}
+.touch .g{display:flex;gap:8px;pointer-events:auto;align-items:flex-end}
+.touch button{width:62px;height:62px;border-radius:50%;border:1px solid rgba(143,227,255,.45);background:rgba(4,5,11,.4);color:#fff;font:600 13px var(--body);touch-action:none;user-select:none;-webkit-user-select:none}
+.touch .big{width:84px;height:84px;border-color:var(--amber)}
+.touch button.on{background:rgba(143,227,255,.35)}
+.notes{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;font-size:14px;color:var(--muted)}
+.notes h2{font-family:var(--display);font-weight:400;font-size:13px;letter-spacing:.12em;color:var(--text);margin:0 0 6px}
+.notes p{margin:0}
+.notes b{color:var(--text);font-weight:600}
+kbd{font-family:ui-monospace,Menlo,monospace;font-size:11px;background:rgba(255,255,255,.07);border:1px solid var(--line);border-radius:3px;padding:0 5px;color:var(--text)}
+.row{display:flex;justify-content:flex-end}
+.tbtn{font:inherit;font-size:13px;color:var(--text);background:transparent;border:1px solid var(--line);border-radius:5px;padding:5px 10px;cursor:pointer}
+.tbtn:hover,.tbtn:focus-visible{border-color:var(--ice);outline:none}
+@media (max-width:760px){.notes{grid-template-columns:minmax(0,1fr)}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <a class="back" href="../../">← Back to the arcade</a>
+  <div class="title"><h1>DRIFTROCK</h1><p class="tag">There is no brake in space. Plan your drift.</p></div>
+  <div class="stage" id="stage">
+    <canvas id="c" aria-label="Driftrock space field"></canvas>
+    <div class="touch" id="touch">
+      <div class="g"><button data-k="left" aria-label="Rotate left">⟲</button><button data-k="right" aria-label="Rotate right">⟳</button></div>
+      <div class="g"><button data-k="jump" aria-label="Hyperspace">JUMP</button><button data-k="thrust" aria-label="Thrust">THRUST</button><button class="big" data-k="fire" aria-label="Fire">FIRE</button></div>
+    </div>
+  </div>
+  <div class="notes">
+    <div><h2>FLY</h2><p><kbd>←</kbd><kbd>→</kbd> or <kbd>A</kbd><kbd>D</kbd> rotate, <kbd>↑</kbd>/<kbd>W</kbd> thrust, <kbd>Space</kbd> fire, <kbd>Shift</kbd> or <kbd>↓</kbd> hyperspace jump (it might drop you somewhere worse). <kbd>P</kbd> pause, <kbd>M</kbd> mute.</p></div>
+    <div><h2>THE FIELD</h2><p>Rocks crack into smaller, faster pieces. Everything wraps around the edges, including your shots. Clear every rock to start the next wave.</p></div>
+    <div><h2>SCORING</h2><p><b>Large rock</b> 20 · <b>medium</b> 50 · <b>small</b> 100 · <b>big saucer</b> 200 · <b>small saucer</b> 1,000 (it aims). Extra ship every 10,000.</p></div>
+  </div>
+  <div class="row"><button class="tbtn" id="fs" type="button">Full screen</button></div>
+</div>
+<script src="../../assets/arcade.js"></script>
+<script>
+(()=>{
+'use strict';
+const W=960,H=600;
+const stage=document.getElementById('stage'),cv=document.getElementById('c'),ctx=cv.getContext('2d');
+let DPR=1;function fit(){DPR=Math.min(window.devicePixelRatio||1,2);cv.width=W*DPR;cv.height=H*DPR;ctx.setTransform(DPR,0,0,DPR,0,0)}fit();
+const rnd=(a,b)=>a+Math.random()*(b-a),clamp=(v,a,b)=>Math.max(a,Math.min(b,v)),pick=a=>a[Math.floor(Math.random()*a.length)];
+const wrap=o=>{if(o.x<0)o.x+=W;if(o.x>=W)o.x-=W;if(o.y<0)o.y+=H;if(o.y>=H)o.y-=H};
+const wd=(a,b,s)=>{let d=b-a;if(d>s/2)d-=s;if(d<-s/2)d+=s;return d};
+const dist=(a,b)=>Math.hypot(wd(a.x,b.x,W),wd(a.y,b.y,H));
+
+/* ---------- audio ---------- */
+let AC=null,muted=false,thrustNode=null;
+function ac(){if(!AC){try{AC=new (window.AudioContext||window.webkitAudioContext)()}catch(e){}}if(AC&&AC.state==='suspended')AC.resume();return AC}
+function tone(f,d,type='square',v=.05,f2=0,w=0){const a=ac();if(!a||muted)return;const t=a.currentTime+w,o=a.createOscillator(),g=a.createGain();o.type=type;o.frequency.setValueAtTime(f,t);if(f2)o.frequency.exponentialRampToValueAtTime(f2,t+d);g.gain.setValueAtTime(v,t);g.gain.exponentialRampToValueAtTime(.0008,t+d);o.connect(g).connect(a.destination);o.start(t);o.stop(t+d+.02)}
+let NB=null;function nbuf(a){if(!NB){NB=a.createBuffer(1,a.sampleRate,a.sampleRate);const c=NB.getChannelData(0);for(let i=0;i<c.length;i++)c[i]=Math.random()*2-1}return NB}
+function noise(d,f0,f1,v){const a=ac();if(!a||muted)return;const s=a.createBufferSource(),f=a.createBiquadFilter(),g=a.createGain(),t=a.currentTime;s.buffer=nbuf(a);s.loop=true;f.type='lowpass';f.frequency.setValueAtTime(f0,t);f.frequency.exponentialRampToValueAtTime(f1,t+d);g.gain.setValueAtTime(v,t);g.gain.exponentialRampToValueAtTime(.001,t+d);s.connect(f).connect(g).connect(a.destination);s.start();s.stop(t+d)}
+function thrustSound(on){const a=ac();if(!a)return;if(on&&!thrustNode&&!muted){const s=a.createBufferSource(),f=a.createBiquadFilter(),g=a.createGain();s.buffer=nbuf(a);s.loop=true;f.type='lowpass';f.frequency.value=380;g.gain.value=.12;s.connect(f).connect(g).connect(a.destination);s.start();thrustNode={s,g}}if((!on||muted)&&thrustNode){const n=thrustNode;n.g.gain.setTargetAtTime(0,a.currentTime,.04);setTimeout(()=>{try{n.s.stop()}catch(e){}},200);thrustNode=null}}
+const S={fire:()=>tone(1400,.09,'square',.03,300),big:()=>noise(.7,900,60,.5),med:()=>noise(.5,1300,90,.4),small:()=>noise(.35,2000,140,.3),die:()=>{noise(1.4,1400,40,.6);tone(200,1.1,'sawtooth',.06,30)},jump:()=>tone(200,.35,'sine',.08,1800),life:()=>[660,880,1100,1320].forEach((f,i)=>tone(f,.1,'square',.05,0,i*.08)),ufoShot:()=>tone(900,.12,'triangle',.04,500)};
+let beatT=0,beatHi=false,beatGap=1;
+
+/* ---------- background ---------- */
+let bg=null;
+function buildBG(){const c=document.createElement('canvas');c.width=W*DPR;c.height=H*DPR;const g=c.getContext('2d');g.scale(DPR,DPR);g.fillStyle='#04050b';g.fillRect(0,0,W,H);
+  for(const [x,y,r,col] of [[W*.22,H*.3,380,'rgba(80,40,160,.22)'],[W*.78,H*.72,420,'rgba(20,110,160,.18)'],[W*.6,H*.2,260,'rgba(180,60,120,.12)']]){const gr=g.createRadialGradient(x,y,0,x,y,r);gr.addColorStop(0,col);gr.addColorStop(1,'rgba(0,0,0,0)');g.fillStyle=gr;g.fillRect(0,0,W,H)}
+  for(let i=0;i<500;i++){g.fillStyle=`rgba(${pick(['255,255,255','180,210,255','255,220,190'])},${rnd(.15,.7)})`;const s=Math.random()<.95?rnd(.5,1.3):rnd(1.5,2.2);g.fillRect(rnd(0,W),rnd(0,H),s,s)}
+  // a distant ringed planet
+  const px=W*.84,py=H*.2;let gr=g.createRadialGradient(px-14,py-14,4,px,py,46);gr.addColorStop(0,'#5a6a9a');gr.addColorStop(1,'#141a33');g.fillStyle=gr;g.beginPath();g.arc(px,py,42,0,7);g.fill();g.strokeStyle='rgba(180,200,255,.35)';g.lineWidth=3;g.beginPath();g.ellipse(px,py,78,14,-.35,0,7);g.stroke();
+  bg=c}
+buildBG();
+const dust=[...Array(70)].map(()=>({x:rnd(0,W),y:rnd(0,H),z:rnd(.2,1)}));
+
+/* ---------- state ---------- */
+let ship,rocks=[],bullets=[],ebullets=[],parts=[],saucer=null,saucerT=12,score=0,hi=0,lives=3,nextLife=10000,wave=0,phase='attract',phaseT=0,paused=false,time=0,shake=0,pops=[];
+try{hi=+localStorage.getItem('driftrock-hi')||0}catch(e){}
+function newShip(){return{x:W/2,y:H/2,vx:0,vy:0,a:-Math.PI/2,thrust:false,inv:2.5,cool:0,alive:true,flame:0}}
+function makeRock(x,y,size,vx,vy){
+  const n=Math.round(rnd(9,13)),r=[42,24,13][size],pts=[];for(let i=0;i<n;i++){const a=i/n*Math.PI*2;pts.push([Math.cos(a)*r*rnd(.72,1.12),Math.sin(a)*r*rnd(.72,1.12)])}
+  const sp=[rnd(30,70),rnd(60,110),rnd(90,160)][size]*(1+wave*.04),a=Math.random()*Math.PI*2;
+  return{x,y,size,r,pts,vx:vx??Math.cos(a)*sp,vy:vy??Math.sin(a)*sp,a:rnd(0,6),va:rnd(-1.2,1.2),hue:pick([195,205,215,265,285])};
+}
+function newWave(){wave++;const n=Math.min(11,3+wave);rocks=[];for(let i=0;i<n;i++){let x,y;do{x=rnd(0,W);y=rnd(0,H)}while(Math.hypot(x-ship.x,y-ship.y)<200);rocks.push(makeRock(x,y,0))}beatGap=1;phase='play';ship.inv=Math.max(ship.inv,1.5)}
+function start(){score=0;lives=3;nextLife=10000;wave=0;bullets=[];ebullets=[];saucer=null;saucerT=14;ship=newShip();newWave()}
+
+/* ---------- input ---------- */
+const keys={},tIn={};
+const KM={ArrowLeft:'left',KeyA:'left',ArrowRight:'right',KeyD:'right',ArrowUp:'thrust',KeyW:'thrust',Space:'fire',KeyJ:'fire',ShiftLeft:'jump',ShiftRight:'jump',ArrowDown:'jump',KeyS:'jump'};
+addEventListener('keydown',e=>{ac();
+  if((e.code==='Enter'||e.code==='Space')&&(phase==='attract'||phase==='over')){e.preventDefault();coin();return}
+  if(KM[e.code]){keys[KM[e.code]]=1;e.preventDefault()}
+  if((e.code==='KeyP'||e.code==='Escape')&&phase!=='attract'&&phase!=='over')paused=!paused;if(e.code==='KeyM'){muted=!muted;thrustSound(false)}});
+addEventListener('keyup',e=>{if(KM[e.code])keys[KM[e.code]]=0});addEventListener('blur',()=>{for(const k in keys)keys[k]=0});
+document.querySelectorAll('#touch button').forEach(b=>{const k=b.dataset.k,on=e=>{e.preventDefault();ac();tIn[k]=1;b.classList.add('on')},off=e=>{e.preventDefault();tIn[k]=0;b.classList.remove('on')};b.addEventListener('pointerdown',on);b.addEventListener('pointerup',off);b.addEventListener('pointerleave',off);b.addEventListener('pointercancel',off)});
+cv.addEventListener('pointerdown',()=>{ac();if(phase==='attract'||phase==='over')coin();else if(paused)paused=false});
+const coarse=matchMedia('(pointer:coarse)').matches;
+function touch(on){document.getElementById('touch').classList.toggle('on',!!on&&coarse)}
+document.getElementById('fs').onclick=()=>{try{document.fullscreenElement?document.exitFullscreen():stage.requestFullscreen().catch(()=>{})}catch(e){}};
+function coin(){const go=()=>{start();touch(true)};if(window.Arcade)Arcade.insertCoin(go,{label:'Driftrock · 1 token = 1 game'});else go()}
+let padPrev={},lastFire=false,lastJump=false;
+function input(){const o={left:keys.left||tIn.left,right:keys.right||tIn.right,thrust:keys.thrust||tIn.thrust,fire:keys.fire||tIn.fire,jump:keys.jump||tIn.jump,turn:0};
+  const g=navigator.getGamepads?navigator.getGamepads()[0]:null;
+  if(g){const b=n=>g.buttons[n]&&g.buttons[n].pressed,ax=g.axes||[];if(Math.abs(ax[0])>.2)o.turn=ax[0];o.left=o.left||b(14);o.right=o.right||b(15);o.thrust=o.thrust||b(12)||b(7)||b(1);o.fire=o.fire||b(0)||b(5);o.jump=o.jump||b(3)||b(13);
+    if(b(9)&&!padPrev.st){if(phase==='attract'||phase==='over')coin();else paused=!paused}padPrev={st:b(9)}}
+  if(!o.turn)o.turn=(o.right?1:0)-(o.left?1:0);return o}
+document.addEventListener('visibilitychange',()=>{if(document.hidden&&phase==='play'){paused=true;thrustSound(false)}});
+
+/* ---------- update ---------- */
+function burst(x,y,col,n,sp,life=.8,sz=2){for(let i=0;i<n;i++){const a=rnd(0,7),v=rnd(sp*.2,sp);parts.push({x,y,vx:Math.cos(a)*v,vy:Math.sin(a)*v,t:rnd(life*.4,life),m:life,col,s:rnd(sz*.5,sz)})}}
+function addScore(n,x,y){score+=n;if(x!==undefined&&n>=200)pops.push({x,y,t:1,text:String(n)});if(score>=nextLife){lives++;nextLife+=10000;S.life()}if(score>hi)hi=score}
+function breakRock(i,byPlayer){
+  const r=rocks[i];rocks.splice(i,1);
+  if(byPlayer)addScore([20,50,100][r.size]);
+  [S.big,S.med,S.small][r.size]();shake=Math.max(shake,[7,4,2][r.size]);
+  const col=`hsl(${r.hue},90%,75%)`;burst(r.x,r.y,col,[26,16,10][r.size],[150,190,230][r.size],.9,2.4);burst(r.x,r.y,'#ffffff',6,120,.4,1.6);
+  for(let k=0;k<6;k++){const a=rnd(0,7),v=rnd(30,90);parts.push({x:r.x,y:r.y,vx:Math.cos(a)*v,vy:Math.sin(a)*v,t:1.2,m:1.2,col:'#2a3458',s:rnd(2,4),shard:true,a:rnd(0,6)})}
+  if(r.size<2)for(let k=0;k<2;k++){const nr=makeRock(r.x,r.y,r.size+1);nr.vx+=r.vx*.4;nr.vy+=r.vy*.4;nr.hue=r.hue;rocks.push(nr)}
+}
+function killShip(){if(!ship.alive)return;ship.alive=false;lives--;S.die();thrustSound(false);shake=12;burst(ship.x,ship.y,'#ffb84a',50,260,1.2,2.6);burst(ship.x,ship.y,'#ffffff',24,160,.6,2);for(let k=0;k<5;k++)parts.push({x:ship.x,y:ship.y,vx:rnd(-80,80),vy:rnd(-80,80),t:1.6,m:1.6,col:'#cfe9ff',s:9,line:true,a:rnd(0,6),va:rnd(-4,4)});phase='dead';phaseT=2.4}
+function spawnSaucer(){const small=score>=10000?Math.random()<.65:score>4000?Math.random()<.3:false,left=Math.random()<.5;saucer={x:left?-20:W+20,y:rnd(60,H-60),vx:(left?1:-1)*(small?150:105),vy:0,small,r:small?11:20,turnT:rnd(.8,1.8),shotT:1.2,life:16};}
+function update(dt){
+  time+=dt;
+  for(const p of parts){p.x+=p.vx*dt;p.y+=p.vy*dt;p.vx*=.985;p.vy*=.985;p.t-=dt;if(p.va)p.a+=p.va*dt}parts=parts.filter(p=>p.t>0);
+  for(const p of pops){p.t-=dt;p.y-=18*dt}pops=pops.filter(p=>p.t>0);
+  for(const d of dust){d.y+=d.z*6*dt;if(d.y>H)d.y=0}
+  if(shake>0)shake*=.86;
+  if(paused)return;
+  // rocks always drift (also behind the title)
+  for(const r of rocks){r.x+=r.vx*dt;r.y+=r.vy*dt;r.a+=r.va*dt;wrap(r)}
+  if(phase==='attract'){if(rocks.length<6){rocks.push(makeRock(rnd(0,W),rnd(0,H),Math.floor(rnd(0,3))))}return}
+  if(phase==='over')return;
+  // bullets
+  for(const b of bullets.concat(ebullets)){b.x+=b.vx*dt;b.y+=b.vy*dt;b.t-=dt;wrap(b)}
+  // player bullets vs rocks and saucer
+  for(const b of bullets){
+    for(let i=rocks.length-1;i>=0;i--){if(dist(b,rocks[i])<rocks[i].r*.92){b.t=0;breakRock(i,true);break}}
+    if(b.t>0&&saucer&&dist(b,saucer)<saucer.r+2){b.t=0;addScore(saucer.small?1000:200,saucer.x,saucer.y);burst(saucer.x,saucer.y,'#ff6ad5',40,220,1,2.4);S.big();shake=8;saucer=null;saucerT=rnd(12,20)}
+  }
+  for(const b of ebullets){for(let i=rocks.length-1;i>=0;i--){if(dist(b,rocks[i])<rocks[i].r*.92){b.t=0;breakRock(i,false);break}}if(b.t>0&&ship.alive&&ship.inv<=0&&dist(b,ship)<10){b.t=0;killShip()}}
+  bullets=bullets.filter(b=>b.t>0);ebullets=ebullets.filter(b=>b.t>0);
+  // saucer
+  if(phase==='play'){saucerT-=dt;if(!saucer&&saucerT<=0&&rocks.length)spawnSaucer()}
+  if(saucer){const s=saucer;s.x+=s.vx*dt;s.y+=s.vy*dt;s.turnT-=dt;s.shotT-=dt;s.life-=dt;if(s.y<0)s.y+=H;if(s.y>H)s.y-=H;
+    if(s.turnT<=0){s.turnT=rnd(.8,1.8);s.vy=pick([-1,0,1])*Math.abs(s.vx)*.6}
+    if(s.shotT<=0&&ship.alive){s.shotT=s.small?rnd(.7,1.1):rnd(1,1.6);let a=Math.random()*Math.PI*2;if(s.small){const err=Math.max(.04,.35-score/60000);a=Math.atan2(wd(s.y,ship.y,H),wd(s.x,ship.x,W))+rnd(-err,err)}ebullets.push({x:s.x,y:s.y,vx:Math.cos(a)*300,vy:Math.sin(a)*300,t:1.4});S.ufoShot()}
+    for(let i=rocks.length-1;i>=0;i--)if(dist(s,rocks[i])<rocks[i].r+s.r*.7){breakRock(i,false);burst(s.x,s.y,'#ff6ad5',30,200);saucer=null;saucerT=rnd(12,20);break}
+    if(saucer&&(s.x<-40||s.x>W+40||s.life<=0)){saucer=null;saucerT=rnd(10,18)}
+    if(saucer&&ship.alive&&ship.inv<=0&&dist(s,ship)<s.r+9){addScore(s.small?1000:200,s.x,s.y);burst(s.x,s.y,'#ff6ad5',30,200);saucer=null;saucerT=rnd(12,20);killShip()}
+    if(saucer&&Math.floor(time*8)%2===0)tone(s.small?1100:700,.05,'square',.012)}
+  if(phase==='dead'){phaseT-=dt;if(phaseT<=0){if(lives<=0){phase='over';thrustSound(false);touch(false);try{localStorage.setItem('driftrock-hi',String(hi))}catch(e){}window.Arcade&&Arcade.submitScore(score)}else{ship=newShip();if(rocks.some(r=>dist(r,ship)<110)){phaseT=.3;return}phase='play'}}return}
+  if(phase==='wave'){phaseT-=dt;if(phaseT<=0)newWave();return}
+  // ship
+  const I=input(),s=ship;
+  s.a+=I.turn*4.6*dt;s.thrust=!!I.thrust;
+  if(s.thrust){s.vx+=Math.cos(s.a)*330*dt;s.vy+=Math.sin(s.a)*330*dt;s.flame=Math.min(1,s.flame+dt*8);if(Math.random()<.9)parts.push({x:s.x-Math.cos(s.a)*12,y:s.y-Math.sin(s.a)*12,vx:-Math.cos(s.a)*rnd(80,160)+s.vx+rnd(-30,30),vy:-Math.sin(s.a)*rnd(80,160)+s.vy+rnd(-30,30),t:.35,m:.35,col:pick(['#ffb84a','#ff6a3a','#fff1c8']),s:rnd(1.5,3)})}else s.flame=Math.max(0,s.flame-dt*6);
+  thrustSound(s.thrust&&!muted);
+  const sp=Math.hypot(s.vx,s.vy),max=420;if(sp>max){s.vx*=max/sp;s.vy*=max/sp}
+  s.vx*=Math.pow(.62,dt);s.vy*=Math.pow(.62,dt);
+  s.x+=s.vx*dt;s.y+=s.vy*dt;wrap(s);if(s.inv>0)s.inv-=dt;
+  s.cool-=dt;
+  if(I.fire&&!lastFire&&s.cool<=0&&bullets.length<5){bullets.push({x:s.x+Math.cos(s.a)*14,y:s.y+Math.sin(s.a)*14,vx:Math.cos(s.a)*560+s.vx,vy:Math.sin(s.a)*560+s.vy,t:1.05});s.cool=.07;S.fire()}
+  lastFire=!!I.fire;
+  if(I.jump&&!lastJump){S.jump();burst(s.x,s.y,'#8fe3ff',20,120,.5);s.x=rnd(40,W-40);s.y=rnd(40,H-40);s.vx=s.vy=0;burst(s.x,s.y,'#8fe3ff',20,120,.5);if(Math.random()<.12&&rocks.length>2){killShip();return}}
+  lastJump=!!I.jump;
+  // ship vs rocks
+  if(s.inv<=0)for(let i=rocks.length-1;i>=0;i--){if(dist(s,rocks[i])<rocks[i].r*.85+8){breakRock(i,true);killShip();return}}
+  // heartbeat
+  beatT-=dt;if(beatT<=0){beatGap=Math.max(.28,beatGap-.006);beatT=beatGap;beatHi=!beatHi;tone(beatHi?62:52,.11,'square',.07)}
+  if(!rocks.length&&phase==='play'){phase='wave';phaseT=2}
+}
+
+/* ---------- render ---------- */
+function drawRock(r){
+  const xs=[0],ys=[0];if(r.x<r.r)xs.push(W);if(r.x>W-r.r)xs.push(-W);if(r.y<r.r)ys.push(H);if(r.y>H-r.r)ys.push(-H);
+  for(const ox of xs)for(const oy of ys){
+    ctx.save();ctx.translate(r.x+ox,r.y+oy);ctx.rotate(r.a);
+    ctx.beginPath();r.pts.forEach(([x,y],i)=>i?ctx.lineTo(x,y):ctx.moveTo(x,y));ctx.closePath();
+    const g=ctx.createRadialGradient(-r.r*.35,-r.r*.35,r.r*.1,0,0,r.r*1.1);g.addColorStop(0,`hsl(${r.hue},35%,26%)`);g.addColorStop(1,`hsl(${r.hue},45%,9%)`);ctx.fillStyle=g;ctx.fill();
+    ctx.shadowColor=`hsl(${r.hue},95%,70%)`;ctx.shadowBlur=12;ctx.strokeStyle=`hsl(${r.hue},90%,74%)`;ctx.lineWidth=1.6;ctx.stroke();ctx.shadowBlur=0;
+    ctx.strokeStyle=`hsla(${r.hue},90%,80%,.25)`;ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(r.pts[1][0]*.5,r.pts[1][1]*.5);ctx.lineTo(r.pts[4][0]*.3,r.pts[4][1]*.3);ctx.lineTo(r.pts[6][0]*.55,r.pts[6][1]*.55);ctx.stroke();
+    ctx.restore();
+  }
+}
+function drawShip(s){
+  if(!s.alive)return;if(s.inv>0&&Math.floor(time*12)%2)return;
+  ctx.save();ctx.translate(s.x,s.y);ctx.rotate(s.a);
+  if(s.flame>0){const f=s.flame*(12+Math.random()*10);const g=ctx.createLinearGradient(-8,0,-8-f,0);g.addColorStop(0,'rgba(255,240,200,.95)');g.addColorStop(.4,'rgba(255,150,60,.8)');g.addColorStop(1,'rgba(255,60,40,0)');ctx.fillStyle=g;ctx.beginPath();ctx.moveTo(-7,-5);ctx.lineTo(-8-f,0);ctx.lineTo(-7,5);ctx.fill()}
+  ctx.beginPath();ctx.moveTo(16,0);ctx.lineTo(-10,-10);ctx.lineTo(-6,0);ctx.lineTo(-10,10);ctx.closePath();
+  const g=ctx.createLinearGradient(-10,-10,16,10);g.addColorStop(0,'#2a3458');g.addColorStop(1,'#8fa6d8');ctx.fillStyle=g;ctx.fill();
+  ctx.shadowColor='#cfe9ff';ctx.shadowBlur=10;ctx.strokeStyle='#eaf4ff';ctx.lineWidth=1.6;ctx.stroke();ctx.shadowBlur=0;
+  ctx.fillStyle='#8fe3ff';ctx.beginPath();ctx.ellipse(4,0,3.4,2.2,0,0,7);ctx.fill();
+  ctx.restore();
+  if(s.inv>0){ctx.strokeStyle=`rgba(143,227,255,${.25+.2*Math.sin(time*10)})`;ctx.beginPath();ctx.arc(s.x,s.y,22,0,7);ctx.stroke()}
+}
+function drawSaucer(s){ctx.save();ctx.translate(s.x,s.y);const k=s.small?.6:1;ctx.scale(k,k);ctx.shadowColor='#ff6ad5';ctx.shadowBlur=14;
+  ctx.fillStyle='#1a0f2a';ctx.strokeStyle='#ff6ad5';ctx.lineWidth=2;ctx.beginPath();ctx.ellipse(0,2,22,7,0,0,7);ctx.fill();ctx.stroke();
+  ctx.fillStyle='rgba(255,180,240,.35)';ctx.beginPath();ctx.ellipse(0,-3,10,8,0,Math.PI,0);ctx.fill();ctx.stroke();ctx.shadowBlur=0;
+  for(let i=0;i<5;i++){ctx.fillStyle=Math.floor(time*10+i)%2?'#ffd1f3':'#ff6ad5';ctx.beginPath();ctx.arc(-14+i*7,3,1.6,0,7);ctx.fill()}ctx.restore()}
+function text(s,x,y,size,col,align='center',font='Michroma,"Arial Black",sans-serif'){ctx.font=`${size}px ${font}`;ctx.textAlign=align;ctx.textBaseline='middle';ctx.fillStyle=col;ctx.fillText(s,x,y)}
+function render(){
+  ctx.save();if(shake>.3)ctx.translate(rnd(-shake,shake),rnd(-shake,shake));
+  ctx.drawImage(bg,0,0,W,H);
+  ctx.fillStyle='rgba(200,220,255,.5)';for(const d of dust)ctx.fillRect(d.x,d.y,d.z*1.6,d.z*1.6);
+  for(const r of rocks)drawRock(r);
+  if(saucer)drawSaucer(saucer);
+  ctx.save();ctx.globalCompositeOperation='lighter';
+  for(const b of bullets){ctx.fillStyle='rgba(143,227,255,.35)';ctx.beginPath();ctx.arc(b.x,b.y,5,0,7);ctx.fill();ctx.fillStyle='#ffffff';ctx.beginPath();ctx.arc(b.x,b.y,1.8,0,7);ctx.fill()}
+  for(const b of ebullets){ctx.fillStyle='rgba(255,106,213,.4)';ctx.beginPath();ctx.arc(b.x,b.y,5,0,7);ctx.fill();ctx.fillStyle='#ffe0f6';ctx.beginPath();ctx.arc(b.x,b.y,2,0,7);ctx.fill()}
+  for(const p of parts){const a=Math.max(0,p.t/p.m);ctx.globalAlpha=a;if(p.line){ctx.save();ctx.translate(p.x,p.y);ctx.rotate(p.a);ctx.strokeStyle=p.col;ctx.lineWidth=1.5;ctx.beginPath();ctx.moveTo(-p.s,0);ctx.lineTo(p.s,0);ctx.stroke();ctx.restore()}else if(p.shard){ctx.globalCompositeOperation='source-over';ctx.fillStyle=p.col;ctx.fillRect(p.x,p.y,p.s,p.s);ctx.globalCompositeOperation='lighter'}else{ctx.fillStyle=p.col;ctx.beginPath();ctx.arc(p.x,p.y,p.s,0,7);ctx.fill()}}
+  ctx.restore();ctx.globalAlpha=1;
+  if(ship&&phase!=='attract')drawShip(ship);
+  for(const p of pops){ctx.globalAlpha=Math.min(1,p.t*2);text(p.text,p.x,p.y-14,13,'#ffb84a');ctx.globalAlpha=1}
+  ctx.restore();
+  // HUD
+  if(phase!=='attract'){
+    text(String(score).padStart(2,'0'),24,30,22,'#e8ecff','left');text('HI '+Math.max(hi,score),W/2,26,13,'#9097c4');text('WAVE '+wave,W-24,26,13,'#9097c4','right');
+    for(let i=0;i<Math.min(lives,8);i++){ctx.save();ctx.translate(30+i*20,58);ctx.rotate(-Math.PI/2);ctx.strokeStyle='#eaf4ff';ctx.lineWidth=1.3;ctx.beginPath();ctx.moveTo(8,0);ctx.lineTo(-5,-5);ctx.lineTo(-3,0);ctx.lineTo(-5,5);ctx.closePath();ctx.stroke();ctx.restore()}
+  }
+  if(phase==='attract'){ctx.fillStyle='rgba(4,5,11,.45)';ctx.fillRect(0,0,W,H);text('DRIFTROCK',W/2,H*.38,58,'#8fe3ff');text('A SCOUT, A ROCK FIELD, AND NO BRAKES',W/2,H*.38+50,14,'#e8ecff','center','Sora,sans-serif');if(Math.floor(time*2)%2===0)text('PRESS ENTER OR TAP TO START · 1 TOKEN',W/2,H*.38+104,15,'#ffb84a');text('HIGH SCORE '+hi,W/2,H-30,12,'#9097c4')}
+  if(phase==='wave')text('WAVE '+(wave+1),W/2,H/2,40,'#8fe3ff');
+  if(phase==='over'){ctx.fillStyle='rgba(4,5,11,.55)';ctx.fillRect(0,0,W,H);text('GAME OVER',W/2,H*.4,52,'#ff6ad5');text('SCORE '+score+' · WAVE '+wave,W/2,H*.4+50,16,'#e8ecff','center','Sora,sans-serif');if(Math.floor(time*2)%2===0)text('PRESS ENTER OR TAP · 1 TOKEN',W/2,H*.4+100,15,'#ffb84a')}
+  if(paused){ctx.fillStyle='rgba(4,5,11,.6)';ctx.fillRect(0,0,W,H);text('PAUSED',W/2,H/2,40,'#e8ecff')}
+}
+let last=performance.now();
+function frame(now){const dt=Math.min(.05,(now-last)/1000);last=now;update(dt);render();requestAnimationFrame(frame)}
+requestAnimationFrame(frame);
+window.__dr={get phase(){return phase},get score(){return score},get lives(){return lives},get wave(){return wave},get rocks(){return rocks.length}};
+})();
+</script>
+</body>
+</html>
