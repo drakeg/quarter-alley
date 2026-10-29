@@ -16,8 +16,10 @@ The running roadmap for the arcade. Check items off as they ship. Games are orig
 - [x] **Starfall** – defend six towns from a meteor shower
 - [x] **Ridgeline** – first-person 3D tank battle with radar
 - [x] **Driftrock** – drifting ship blasting space rocks that break apart (Asteroids-style)
+- [x] **Lifeline** – side-scrolling rescue shooter with a world scanner (Defender-style)
 
 ### Up next
+- [ ] **Canopy Run** – jungle explorer swinging on vines over pits, crocodiles and rolling logs to grab treasure (Pitfall-style)
 - [ ] **Hive Swarm** – fixed shooter vs diving formations of mechanical bugs (Galaga-style)
 - [ ] **Brickwave** – paddle, ball and bricks with power-ups (Breakout-style)
 - [ ] **Girder Gang** – climb girders and dodge barrels to the top (Donkey Kong-style)
@@ -31,7 +33,6 @@ The running roadmap for the arcade. Check items off as they ship. Games are orig
 - [ ] **Soft Landing** – land a craft gently with limited fuel (Lunar Lander-style)
 - [ ] **Lightline** – light-trail duels for 2–4 players (light cycles / Snake)
 - [ ] **Blast Block** – bomb-maze party game for up to 4 gamepads (Bomberman-style)
-- [ ] **Overwatch** – side-scrolling rescue shooter (Defender-style)
 - [ ] **Twin Fury** – twin-stick arena survival (Robotron-style)
 - [ ] **Tube Rider** – shoot down a 3D tube (Tempest-style)
 

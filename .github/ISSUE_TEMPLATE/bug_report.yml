@@ -20,6 +20,7 @@ body:
         - Starfall
         - Ridgeline
         - Driftrock
+        - Lifeline
         - Accounts / sign-in
         - Leaderboards
     validations:

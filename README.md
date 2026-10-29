@@ -17,6 +17,7 @@ A static website of original retro-style browser games. No build step, no server
 | **Starfall** | Defense. Fire flares from three batteries to burst meteors before they hit six seaside towns. |
 | **Ridgeline** | First-person 3D tank combat with radar, built with three.js. |
 | **Driftrock** | Space shooter. A drifting ship splits glowing rocks into smaller pieces; saucers hunt you. |
+| **Lifeline** | Side-scrolling rescue shooter. Stop snatchers carrying off colonists and catch them as they fall. |
 
 ```
 quarter-alley/
@@ -35,7 +36,8 @@ quarter-alley/
     ├── iron-treads/index.html
     ├── starfall/index.html
     ├── ridgeline/index.html
-    └── driftrock/index.html
+    ├── driftrock/index.html
+    └── lifeline/index.html
 ├── leaderboards/index.html           ← public high scores (needs accounts)
 ├── supabase/schema.sql               ← database for accounts, tokens and scores
 ├── docs/LOGIN.md                     ← how to switch on accounts
