@@ -272,7 +272,7 @@ function update(dt){
   for(const c of clouds)c.t-=dt;clouds=clouds.filter(c=>c.t>0);
   for(const q of pops){q.t-=dt;q.y-=22*dt}pops=pops.filter(q=>q.t>0);
   if(state==='play'&&!paused){updatePlayer(dt);updateSalt();updateLayers(dt);updateEnemies(dt)}
-  else if(state==='dying'){stateT-=dt;if(stateT<=0){lives--;if(lives<=0){state='over';saveHi()}else{resetActors();state='play'}}}
+  else if(state==='dying'){stateT-=dt;if(stateT<=0){lives--;if(lives<=0){state='over';saveHi();window.Arcade&&Arcade.submitScore(score);}else{resetActors();state='play'}}}
   else if(state==='clear'){stateT-=dt;updateLayers(dt);if(stateT<=0){level++;salt=Math.max(salt,3);buildLevel();state='play'}}
   if(score>hi)hi=score;
 }

@@ -159,7 +159,7 @@ function update(dt){
   if(!paused)for(const l of lanes){for(const it of l.items){it.x+=l.sp*dt;if(l.sp>0&&it.x-T*2>W+T*2)it.x-=l.span;if(l.sp<0&&it.x-T*2+it.len*T<-T*2)it.x+=l.span}}
   if(paused||phase==='attract'||phase==='over')return;
   if(phase==='clear'){phaseT-=dt;if(phaseT<=0){level++;dens.forEach(d=>{d.full=false;d.bug=0;d.snake=0});buildLanes();resetPlayer();phase='play'}return}
-  if(dead){dead.t-=dt;if(dead.t<=0){dead=null;if(lives<=0){phase='over';try{localStorage.setItem('rascal-road-hi',String(hi))}catch(e){}}else resetPlayer()}return}
+  if(dead){dead.t-=dt;if(dead.t<=0){dead=null;if(lives<=0){phase='over';window.Arcade&&Arcade.submitScore(score);try{localStorage.setItem('rascal-road-hi',String(hi))}catch(e){}}else resetPlayer()}return}
   // timer
   const before=Math.ceil(timer);timer-=dt;if(Math.ceil(timer)!==before&&timer<6&&timer>0)S.tick();if(timer<=0){die('time');return}
   // held direction repeats

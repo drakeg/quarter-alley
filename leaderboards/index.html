@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Quarter Alley Leaderboards</title>
+<meta name="description" content="Top scores for every Quarter Alley game.">
+<link rel="icon" href="../assets/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bungee&family=Chivo:wght@400;600&family=Chivo+Mono:wght@500&display=swap">
+<style>
+/* Layout: arcade "high score" boards, one per game, game picker along the top. Matches the hub's night-arcade look. */
+:root{
+  --bg:#0e1828;
+  --cab:#1b2d47;
+  --line:#2d4769;
+  --cream:#f3e6c8;
+  --cherry:#e2483d;
+  --mustard:#f2b632;
+  --muted:#8ea3bb;
+  --display:"Bungee","Arial Black",Impact,sans-serif;
+  --body:"Chivo","Segoe UI",system-ui,sans-serif;
+  --mono:"Chivo Mono",ui-monospace,Menlo,monospace;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--cream)}
+body{font-family:var(--body);font-size:15px;line-height:1.55}
+.wrap{max-width:900px;margin:0 auto;padding-left:max(20px,env(safe-area-inset-left,0px));padding-right:max(20px,env(safe-area-inset-right,0px));padding-block:16px 48px;display:flex;flex-direction:column;gap:18px}
+.back{font-size:12px;color:var(--muted);text-decoration:none;letter-spacing:.12em;text-transform:uppercase}
+.back:hover,.back:focus-visible{color:var(--mustard)}
+h1{font-family:var(--display);font-weight:400;font-size:clamp(30px,7vw,52px);line-height:1;margin:6px 0 0;color:var(--cherry)}
+.lede{margin:0;color:var(--muted);max-width:60ch}
+.picker{display:flex;flex-wrap:wrap;gap:8px}
+.picker button{font:600 13px var(--body);color:var(--cream);background:rgba(255,255,255,.04);border:1px solid var(--line);border-radius:999px;padding:6px 12px;cursor:pointer}
+.picker button[aria-pressed="true"]{background:var(--mustard);border-color:var(--mustard);color:#1b1408}
+.picker button:focus-visible{outline:2px solid var(--mustard);outline-offset:2px}
+.board{background:#081120;border:2px solid var(--line);border-radius:12px;padding:20px 22px;box-shadow:inset 0 0 40px rgba(0,0,0,.5)}
+.board h2{font-family:var(--display);font-weight:400;font-size:24px;margin:0 0 4px;color:var(--mustard)}
+.board .sub{margin:0 0 14px;color:var(--muted);font-size:13px}
+.board .sub a{color:var(--cream)}
+table{width:100%;border-collapse:collapse;font-family:var(--mono);font-variant-numeric:tabular-nums}
+th{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);text-align:left;padding:6px 8px;border-bottom:1px solid var(--line)}
+td{padding:8px;border-bottom:1px dashed rgba(255,255,255,.07);font-size:15px}
+td.rank{width:3em;color:var(--muted)}
+tr:nth-child(1) td{color:#ffd166}tr:nth-child(2) td{color:#e6e6e6}tr:nth-child(3) td{color:#e0a46a}
+td.num,th.num{text-align:right}
+.empty{color:var(--muted);font-family:var(--body);padding:12px 0}
+.tbl{overflow-x:auto}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <a class="back" href="../">← Back to the arcade</a>
+  <header>
+    <h1>High Scores</h1>
+    <p class="lede">Each player's best score in every game. Sign in before you play to get your name up here.</p>
+  </header>
+  <div class="picker" id="picker" role="group" aria-label="Choose a game"></div>
+  <section class="board" aria-live="polite">
+    <h2 id="gname">Loading…</h2>
+    <p class="sub" id="gsub"></p>
+    <div class="tbl" id="tbl"></div>
+  </section>
+</div>
+<script src="../assets/arcade.js"></script>
+<script>
+(() => {
+  const games = window.Arcade ? Arcade.games : [];
+  const picker = document.getElementById('picker');
+  const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  let current = (location.hash.slice(1) && games.find(g => g[0] === location.hash.slice(1))) ? location.hash.slice(1) : games[0][0];
+  games.forEach(([slug, name]) => {
+    const b = document.createElement('button'); b.type = 'button'; b.textContent = name; b.dataset.slug = slug;
+    b.onclick = () => { location.hash = slug; };
+    picker.appendChild(b);
+  });
+  async function show(slug) {
+    current = slug;
+    picker.querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', b.dataset.slug === slug ? 'true' : 'false'));
+    const name = games.find(g => g[0] === slug)[1];
+    document.getElementById('gname').textContent = name;
+    document.getElementById('gsub').innerHTML = `<a href="../games/${slug}/">Play ${esc(name)}</a>`;
+    const tbl = document.getElementById('tbl');
+    if (!Arcade.accountsOn) { tbl.innerHTML = '<p class="empty">Leaderboards appear once player accounts are switched on. Until then, each game shows your best score on its own screen.</p>'; return; }
+    tbl.innerHTML = '<p class="empty">Loading scores…</p>';
+    const r = await Arcade.topScores(slug, 10);
+    if (current !== slug) return;
+    if (r.error) { tbl.innerHTML = '<p class="empty">The scores could not be loaded. Check your connection and refresh the page.</p>'; return; }
+    if (!r.rows.length) { tbl.innerHTML = '<p class="empty">No scores yet. Be the first name on the board.</p>'; return; }
+    tbl.innerHTML = `<table><thead><tr><th>#</th><th>Player</th><th class="num">Score</th><th class="num">Date</th></tr></thead><tbody>${r.rows.map((row, i) => `<tr><td class="rank">${i + 1}</td><td>${esc(row.display_name || 'Player')}</td><td class="num">${Number(row.score).toLocaleString()}</td><td class="num">${new Date(row.created_at).toLocaleDateString()}</td></tr>`).join('')}</tbody></table>`;
+  }
+  addEventListener('hashchange', () => { const s = location.hash.slice(1); if (games.find(g => g[0] === s)) show(s); });
+  show(current);
+})();
+</script>
+</body>
+</html>

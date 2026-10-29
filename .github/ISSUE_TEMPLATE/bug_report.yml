@@ -18,6 +18,9 @@ body:
         - Rascal Road
         - Iron Treads
         - Starfall
+        - Ridgeline
+        - Accounts / sign-in
+        - Leaderboards
     validations:
       required: true
   - type: textarea

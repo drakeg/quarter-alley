@@ -253,7 +253,7 @@ function update(dt){
   if(paused)return;
   if(phase==='attract'){phaseT+=dt;return}
   if(phase==='ready'){phaseT-=dt;if(phaseT<=0)setPhase('play');return}
-  if(phase==='dying'){phaseT-=dt;if(phaseT<=0){lives--;if(lives<=0){setPhase('over',0);saveHi()}else{resetActors();setPhase('ready',2)}}return}
+  if(phase==='dying'){phaseT-=dt;if(phaseT<=0){lives--;if(lives<=0){setPhase('over',0);saveHi();window.Arcade&&Arcade.submitScore(score);}else{resetActors();setPhase('ready',2)}}return}
   if(phase==='clear'){phaseT-=dt;if(phaseT<=0){level++;levelItems.push(bonusFor(level));if(levelItems.length>7)levelItems.shift();newLevelGrid();resetActors();setPhase('ready',2.2)}return}
   if(phase!=='play')return;
   if(freezeT>0){freezeT-=dt;return}

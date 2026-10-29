@@ -1,6 +1,8 @@
 /* Quarter Alley shared arcade layer
- * - Token wallet (stored in the player's browser, refills daily)
+ * - Token wallet: in the browser for guests, on the server for signed-in players
  * - Insert-token coin slot overlay: Arcade.insertCoin(callback)
+ * - Accounts (Supabase): sign in with an email link, Google or GitHub
+ * - Scores: Arcade.submitScore(score) at game over; leaderboards page reads them
  * - "Report a bug" form that opens a prefilled GitHub issue
  * Include before a game's own script:  <script src="../../assets/arcade.js"></script>
  */
@@ -10,13 +12,19 @@
     startTokens: 10,      // tokens for a brand-new player
     dailyTokens: 10,      // balance is topped up to this once per day
     freePlay: false,      // true = no tokens needed anywhere (also: add ?freeplay to a URL)
-    repo: 'drakeg/quarter-alley'
+    repo: 'drakeg/quarter-alley',
+    // Accounts: paste your Supabase project URL and anon (public) key to switch sign-in on.
+    // See docs/LOGIN.md. Leave empty and everyone plays as a guest.
+    supabaseUrl: '',
+    supabaseAnonKey: ''
   };
-  const GAMES = ['Arcade home page', 'Stack Shack', 'Prairie Schooner', 'Ashfall', 'Glitch Grid', 'Sunset Circuit', 'Spore Storm', 'Rascal Road', 'Iron Treads', 'Starfall'];
+  const GAMES = ['Arcade home page', 'Stack Shack', 'Prairie Schooner', 'Ashfall', 'Glitch Grid', 'Sunset Circuit', 'Spore Storm', 'Rascal Road', 'Iron Treads', 'Starfall', 'Ridgeline', 'Accounts / sign-in', 'Leaderboards'];
   const KEY = 'qa-wallet';
   const freePlay = CONFIG.freePlay || /[?&]freeplay\b/.test(location.search);
+  const listeners = [];
+  const emit = () => listeners.forEach(f => { try { f(tokens()); } catch (e) {} });
 
-  /* ---------- wallet ---------- */
+  /* ---------- local (guest) wallet ---------- */
   const today = () => { const d = new Date(); return `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`; };
   let mem = null;
   function read() {
@@ -27,10 +35,40 @@
     if (w.day !== today()) { w.day = today(); if (w.tokens < CONFIG.dailyTokens) w.tokens = CONFIG.dailyTokens; }
     return w;
   }
-  function write(w) { mem = w; try { localStorage.setItem(KEY, JSON.stringify(w)); } catch (e) {} listeners.forEach(f => f(w.tokens)); }
-  const listeners = [];
-  let wallet = read(); write(wallet);
-  const tokens = () => (wallet = read()).tokens;
+  function write(w) { mem = w; try { localStorage.setItem(KEY, JSON.stringify(w)); } catch (e) {} emit(); }
+  write(read());
+
+  /* ---------- accounts (Supabase) ---------- */
+  const acct = { configured: !!(CONFIG.supabaseUrl && CONFIG.supabaseAnonKey), client: null, user: null, profile: null, wallet: null, ready: null, error: '' };
+  const signedIn = () => !!(acct.client && acct.user);
+  function tokens() { return signedIn() && acct.wallet ? acct.wallet.tokens : read().tokens; }
+  function loadScript(src) { return new Promise((res, rej) => { const s = document.createElement('script'); s.src = src; s.onload = res; s.onerror = () => rej(new Error('load')); document.head.appendChild(s); }); }
+  async function refreshAccount() {
+    if (!acct.client || !acct.user) { acct.profile = null; acct.wallet = null; emit(); return; }
+    try {
+      const [w, p] = await Promise.all([acct.client.rpc('get_wallet'), acct.client.from('profiles').select('display_name').eq('id', acct.user.id).maybeSingle()]);
+      if (w.error) throw w.error;
+      acct.wallet = Array.isArray(w.data) ? w.data[0] : w.data;
+      acct.profile = p.data || { display_name: null };
+      acct.error = '';
+    } catch (e) { acct.error = 'Could not reach the arcade server.'; }
+    emit();
+  }
+  if (acct.configured) {
+    acct.ready = (async () => {
+      try {
+        if (!window.supabase) await loadScript('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js');
+        acct.client = window.supabase.createClient(CONFIG.supabaseUrl, CONFIG.supabaseAnonKey, { auth: { persistSession: true, detectSessionInUrl: true, autoRefreshToken: true } });
+        const { data } = await acct.client.auth.getSession();
+        acct.user = data && data.session ? data.session.user : null;
+        await refreshAccount();
+        acct.client.auth.onAuthStateChange((_ev, session) => { const was = acct.user && acct.user.id; acct.user = session ? session.user : null; if ((acct.user && acct.user.id) !== was) refreshAccount(); });
+      } catch (e) { acct.error = 'Sign-in is unavailable right now.'; acct.client = null; }
+      emit();
+    })();
+  }
+  const displayName = () => (acct.profile && acct.profile.display_name) || (acct.user && acct.user.email ? acct.user.email.split('@')[0] : 'Player');
+  const gameSlug = () => { const m = location.pathname.match(/\/games\/([^/]+)/); return m ? m[1] : null; };
 
   /* ---------- sound ---------- */
   let AC = null;
@@ -53,14 +91,16 @@
       <path d="M14 22 A20 20 0 0 1 30 12" stroke="#fff8dc" stroke-width="2.5" fill="none" stroke-linecap="round" opacity=".8"/>
     </svg>`;
   }
+  const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
   /* ---------- styles ---------- */
   const css = `
   .qa-bar{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
-  .qa-chips{display:flex;gap:8px;align-items:center}
+  .qa-chips{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
   .qa-chip{display:inline-flex;align-items:center;gap:6px;font:600 13px/1 system-ui,-apple-system,"Segoe UI",sans-serif;color:#f4ead2;background:rgba(0,0,0,.35);border:1px solid rgba(255,255,255,.18);border-radius:999px;padding:4px 10px 4px 4px;font-variant-numeric:tabular-nums;white-space:nowrap}
   button.qa-chip{cursor:pointer;padding:6px 11px}
   button.qa-chip:hover,button.qa-chip:focus-visible{border-color:#f2b632;outline:none}
+  .qa-av{width:18px;height:18px;border-radius:50%;display:inline-grid;place-items:center;font:800 10px/1 system-ui,sans-serif;color:#1b1408;background:#f2b632}
   .qa-ov{position:fixed;inset:0;z-index:2147483000;background:rgba(5,6,10,.72);backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);display:flex;align-items:center;justify-content:center;padding:max(16px,env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) max(16px,env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));font-family:system-ui,-apple-system,"Segoe UI",sans-serif;color:#f4ead2;overscroll-behavior:contain}
   .qa-door{position:relative;width:min(100%,400px);max-height:100%;overflow:auto;border-radius:14px;padding:22px 22px 18px;background:
      radial-gradient(circle at 14px 14px,#6b7078 0 3px,#24272c 3.5px 5px,transparent 5.5px),radial-gradient(circle at calc(100% - 14px) 14px,#6b7078 0 3px,#24272c 3.5px 5px,transparent 5.5px),
@@ -90,23 +130,30 @@
   .qa-count small{display:block;font:600 11px/1.3 system-ui,sans-serif;color:#b9b2a2;letter-spacing:.06em;text-transform:uppercase}
   .qa-credit{font:900 18px/1 "Courier New",monospace;letter-spacing:.2em;color:#7dff8a;text-shadow:0 0 8px #2bd147;min-height:18px}
   .qa-row{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
-  .qa-btn{font:600 14px/1 system-ui,sans-serif;color:#f4ead2;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.2);border-radius:6px;padding:9px 14px;cursor:pointer;text-decoration:none;display:inline-block}
+  .qa-btn{font:600 14px/1 system-ui,sans-serif;color:#f4ead2;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.2);border-radius:6px;padding:9px 14px;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;justify-content:center;gap:8px}
   .qa-btn:hover,.qa-btn:focus-visible{border-color:#f2b632;outline:none}
   .qa-btn.qa-pri{background:#f2b632;border-color:#f2b632;color:#1b1408}
+  .qa-btn[disabled]{opacity:.5;cursor:default}
   .qa-fly{position:fixed;z-index:2147483001;pointer-events:none;line-height:0}
   .qa-form{width:min(100%,480px);background:#1b1d22;border:1px solid rgba(255,255,255,.14);border-radius:12px;padding:20px;display:flex;flex-direction:column;gap:12px;text-align:left;max-height:100%;overflow:auto;box-shadow:0 30px 80px rgba(0,0,0,.6)}
   .qa-form h2{margin:0;font:800 22px/1.1 system-ui,sans-serif}
   .qa-form label{display:flex;flex-direction:column;gap:5px;font-size:13px;color:#cfc6b4}
-  .qa-form textarea,.qa-form select{font:14px/1.4 system-ui,sans-serif;color:#f4ead2;background:#0f1013;border:1px solid rgba(255,255,255,.18);border-radius:6px;padding:8px}
+  .qa-form textarea,.qa-form select,.qa-form input{font:14px/1.4 system-ui,sans-serif;color:#f4ead2;background:#0f1013;border:1px solid rgba(255,255,255,.18);border-radius:6px;padding:8px}
   .qa-form textarea{min-height:84px;resize:vertical}
-  .qa-form textarea:focus-visible,.qa-form select:focus-visible{outline:2px solid #f2b632;outline-offset:1px}
+  .qa-form textarea:focus-visible,.qa-form select:focus-visible,.qa-form input:focus-visible{outline:2px solid #f2b632;outline-offset:1px}
   .qa-form p{margin:0;font-size:12.5px;color:#9a9284;line-height:1.45}
+  .qa-or{display:flex;align-items:center;gap:10px;font-size:12px;color:#7d776c}
+  .qa-or::before,.qa-or::after{content:"";flex:1;height:1px;background:rgba(255,255,255,.12)}
+  .qa-stack{display:flex;flex-direction:column;gap:8px}
   .qa-msg{color:#7dff8a!important;min-height:1.2em}
+  .qa-err{color:#ff8a6a!important}
+  .qa-toast{position:fixed;left:50%;bottom:max(18px,env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:2147482999;background:#1b1d22;color:#f4ead2;border:1px solid rgba(255,255,255,.18);border-radius:999px;padding:9px 16px;font:600 13px/1.2 system-ui,sans-serif;box-shadow:0 10px 30px rgba(0,0,0,.5);max-width:calc(100% - 32px);text-align:center}
+  .qa-toast a,.qa-toast button{color:#f2b632;background:none;border:0;font:inherit;cursor:pointer;text-decoration:underline;padding:0}
   @media (prefers-reduced-motion:reduce){.qa-ready .qa-marq,.qa-ready .qa-slot .qa-lamp{animation:none}.qa-coin{transition:none}}
   `;
   const st = document.createElement('style'); st.textContent = css; document.head.appendChild(st);
 
-  /* ---------- insert coin overlay ---------- */
+  /* ---------- modals ---------- */
   let open = null;
   function trap(e) {
     if (!open) return;
@@ -114,15 +161,14 @@
     if (e.type !== 'keydown') return;
     if (e.key === 'Escape') { e.preventDefault(); open.close(); }
     else if (e.key === 'Tab') {
-      const f = [...open.el.querySelectorAll('button,a,textarea,select')].filter(x => !x.disabled && x.offsetParent);
+      const f = [...open.el.querySelectorAll('button,a,textarea,select,input')].filter(x => !x.disabled && x.offsetParent);
       if (!f.length) return; const i = f.indexOf(document.activeElement);
       if (e.shiftKey && i <= 0) { e.preventDefault(); f[f.length - 1].focus(); }
       else if (!e.shiftKey && i === f.length - 1) { e.preventDefault(); f[0].focus(); }
     } else if (open.onKey) open.onKey(e);
   }
   ['keydown', 'keyup', 'keypress'].forEach(t => window.addEventListener(t, trap, true));
-
-  function modal(html, cls) {
+  function modal(html) {
     const prevFocus = document.activeElement;
     const el = document.createElement('div'); el.className = 'qa-ov'; el.setAttribute('role', 'dialog'); el.setAttribute('aria-modal', 'true');
     el.innerHTML = html; (document.fullscreenElement || document.body).appendChild(el);
@@ -130,16 +176,35 @@
     el.addEventListener('pointerdown', e => { if (e.target === el) m.close(); });
     open = m; return m;
   }
+  let toastEl = null, toastT = 0;
+  function toast(html, ms = 4200) {
+    if (toastEl) toastEl.remove();
+    toastEl = document.createElement('div'); toastEl.className = 'qa-toast'; toastEl.setAttribute('role', 'status'); toastEl.innerHTML = html;
+    (document.fullscreenElement || document.body).appendChild(toastEl);
+    clearTimeout(toastT); const el = toastEl; toastT = setTimeout(() => { el.remove(); if (toastEl === el) toastEl = null; }, ms);
+    return toastEl;
+  }
 
-  function insertCoin(onCredit, opts = {}) {
+  /* ---------- insert coin ---------- */
+  async function spendServer() {
+    const r = await acct.client.rpc('spend_token');
+    if (r.error) { const out = /out_of_tokens/.test(r.error.message || ''); throw new Error(out ? 'out' : 'net'); }
+    const left = Array.isArray(r.data) ? r.data[0] : r.data;
+    if (acct.wallet) { acct.wallet.tokens = typeof left === 'number' ? left : Math.max(0, acct.wallet.tokens - 1); acct.wallet.games_played = (acct.wallet.games_played || 0) + 1; }
+    emit();
+  }
+  async function insertCoin(onCredit, opts = {}) {
     ac();
     if (freePlay) { onCredit(); return; }
     if (open) return;
+    if (acct.ready) { await Promise.race([acct.ready, new Promise(r => setTimeout(r, 2500))]); }
+    const server = signedIn() && !!acct.wallet;
     const n = tokens();
     const outOf = n <= 0;
+    const who = server ? `Signed in as ${esc(displayName())}` : (acct.configured && acct.client ? 'Playing as a guest' : '');
     const m = modal(`<div class="qa-door ${outOf ? '' : 'qa-ready'}" aria-labelledby="qa-t">
         <p class="qa-marq" id="qa-t">${outOf ? 'OUT OF TOKENS' : 'INSERT TOKEN'}</p>
-        <p class="qa-sub">${outOf ? `Your free tokens refill to ${CONFIG.dailyTokens} tomorrow.` : (opts.label || '1 token = 1 game')}</p>
+        <p class="qa-sub">${outOf ? `Your free tokens refill to ${CONFIG.dailyTokens} tomorrow.` : esc(opts.label || '1 token = 1 game')}</p>
         <div class="qa-slots">
           <button type="button" class="qa-slot ${outOf ? 'qa-off' : ''}" data-slot aria-label="Coin slot: insert a token"><span class="qa-slit"></span><span class="qa-lamp">1 TOKEN<small>PUSH</small></span></button>
           <button type="button" class="qa-slot qa-off" tabindex="-1" aria-hidden="true" disabled><span class="qa-slit"></span><span class="qa-lamp">1 TOKEN<small>PLAYER 2</small></span></button>
@@ -149,16 +214,19 @@
           ${outOf ? '' : `<button type="button" class="qa-coin" data-coin aria-label="Token: drag to the slot, click, or press Enter">${coinSVG(58)}</button>`}
           <div class="qa-count"><span data-n>${n}</span><small>token${n === 1 ? '' : 's'} left</small></div>
         </div>
-        <p class="qa-sub">${outOf ? '' : 'Drag the token into the slot, click it, or press Enter.'}</p>
+        <p class="qa-sub" data-note>${outOf ? '' : 'Drag the token into the slot, click it, or press Enter.'}</p>
+        ${who ? `<p class="qa-sub" style="opacity:.75">${who}</p>` : ''}
         <div class="qa-row">${outOf ? '<a class="qa-btn qa-pri" href="' + homeHref() + '">Back to the arcade</a>' : ''}<button type="button" class="qa-btn" data-cancel>${outOf ? 'Close' : 'Not now'}</button></div>
       </div>`);
     const el = m.el, slot = el.querySelector('[data-slot]'), coin = el.querySelector('[data-coin]');
     el.querySelector('[data-cancel]').onclick = () => m.close();
-    let busy = false;
+    let busy = false, dragged = false;
     function insert() {
       if (busy || outOf) return; busy = true;
-      wallet = read(); wallet.tokens = Math.max(0, wallet.tokens - 1); wallet.played = (wallet.played || 0) + 1; write(wallet);
-      el.querySelector('[data-n]').textContent = wallet.tokens;
+      let paid;
+      if (server) paid = spendServer();
+      else { const w = read(); w.tokens = Math.max(0, w.tokens - 1); w.played = (w.played || 0) + 1; write(w); paid = Promise.resolve(); }
+      el.querySelector('[data-n]').textContent = Math.max(0, n - 1);
       const s = el.querySelector('.qa-slit').getBoundingClientRect(), c = coin.getBoundingClientRect();
       const fly = document.createElement('div'); fly.className = 'qa-fly'; fly.innerHTML = coinSVG(58);
       fly.style.left = c.left + 'px'; fly.style.top = c.top + 'px'; (document.fullscreenElement || document.body).appendChild(fly);
@@ -166,8 +234,15 @@
       coinSound();
       const dx = s.left + s.width / 2 - (c.left + c.width / 2), dy = s.top - (c.top + c.height / 2);
       const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
-      const done = () => {
-        fly.remove(); slot.classList.add('qa-hot');
+      const done = async () => {
+        fly.remove();
+        try { await paid; }
+        catch (e) {
+          const note = el.querySelector('[data-note]'); note.className = 'qa-sub qa-err';
+          note.textContent = e.message === 'out' ? 'Your account is out of tokens. They refill tomorrow.' : 'Could not reach the arcade server. Check your connection and try again.';
+          coin.style.visibility = ''; busy = false; el.querySelector('[data-n]').textContent = tokens(); return;
+        }
+        slot.classList.add('qa-hot');
         el.querySelector('.qa-credit').textContent = 'CREDIT 01'; creditSound();
         setTimeout(() => { m.close(); onCredit(); }, reduce ? 150 : 550);
       };
@@ -184,12 +259,11 @@
     if (!outOf) {
       slot.onclick = insert;
       coin.onclick = () => { if (!dragged) insert(); };
-      // drag the token to the slot
-      let drag = null, dragged = false;
-      coin.addEventListener('pointerdown', e => { dragged = false; const r = coin.getBoundingClientRect(); drag = { x: e.clientX, y: e.clientY, ox: r.left, oy: r.top }; coin.setPointerCapture(e.pointerId); });
+      let drag = null;
+      coin.addEventListener('pointerdown', e => { dragged = false; drag = { x: e.clientX, y: e.clientY }; coin.setPointerCapture(e.pointerId); });
       coin.addEventListener('pointermove', e => { if (!drag) return; const dx = e.clientX - drag.x, dy = e.clientY - drag.y; if (Math.hypot(dx, dy) > 6) dragged = true; if (dragged) { coin.style.transition = 'none'; coin.style.transform = `translate(${dx}px,${dy}px) rotate(${dx / 6}deg)`; } });
       const end = e => {
-        if (!drag) return; const was = drag; drag = null;
+        if (!drag) return; drag = null;
         if (!dragged) return;
         const s = slot.getBoundingClientRect();
         const over = e.clientX > s.left - 20 && e.clientX < s.right + 20 && e.clientY > s.top - 20 && e.clientY < s.bottom;
@@ -201,8 +275,109 @@
       setTimeout(() => coin.focus({ preventScroll: true }), 30);
     } else setTimeout(() => el.querySelector('[data-cancel]').focus(), 30);
   }
+  function rootHref() { const p = location.pathname; return p.includes('/games/') ? '../../' : p.includes('/leaderboards/') ? '../' : './'; }
+  function homeHref() { return rootHref(); }
 
-  function homeHref() { const s = document.currentScript; return location.pathname.includes('/games/') ? '../../' : './'; }
+  /* ---------- scores ---------- */
+  const submitted = new Set();
+  async function submitScore(score, game) {
+    game = game || gameSlug();
+    score = Math.floor(Number(score) || 0);
+    if (!game || score <= 0) return;
+    const key = game + ':' + score + ':' + Math.floor(Date.now() / 5000);
+    if (submitted.has(key)) return; submitted.add(key);
+    if (acct.ready) await Promise.race([acct.ready, new Promise(r => setTimeout(r, 2500))]);
+    if (signedIn()) {
+      const r = await acct.client.rpc('submit_score', { p_game: game, p_score: score });
+      if (r.error) toast('Your score could not be saved. Check your connection.');
+      else toast(`Score ${score.toLocaleString()} saved to your account. <a href="${rootHref()}leaderboards/#${game}">Leaderboard</a>`);
+    } else if (acct.configured && acct.client) {
+      const t = toast(`Nice game! <button type="button">Sign in</button> to put scores like ${score.toLocaleString()} on the leaderboard.`);
+      t.querySelector('button').onclick = () => { t.remove(); signIn(); };
+    }
+  }
+  async function topScores(game, limit = 10) {
+    if (!acct.configured) return { error: 'off' };
+    await acct.ready;
+    if (!acct.client) return { error: 'net' };
+    const r = await acct.client.rpc('top_scores', { p_game: game, p_limit: limit });
+    return r.error ? { error: 'net' } : { rows: r.data || [] };
+  }
+
+  /* ---------- sign in / account ---------- */
+  function signIn() {
+    if (open) return;
+    if (!acct.configured || !acct.client) {
+      const m = modal(`<div class="qa-form" aria-labelledby="qa-st"><h2 id="qa-st">Player accounts</h2>
+        <p style="font-size:14px;color:#cfc6b4">${acct.configured ? esc(acct.error || 'Sign-in is starting up. Try again in a moment.') : 'Accounts are not switched on yet. For now your tokens and high scores are saved in this browser.'}</p>
+        <div class="qa-row" style="justify-content:flex-start"><button type="button" class="qa-btn qa-pri" data-cancel>OK</button></div></div>`);
+      m.el.querySelector('[data-cancel]').onclick = () => m.close(); setTimeout(() => m.el.querySelector('[data-cancel]').focus(), 30); return;
+    }
+    const m = modal(`<form class="qa-form" aria-labelledby="qa-st" novalidate>
+      <h2 id="qa-st">Sign in to Quarter Alley</h2>
+      <p style="font-size:14px;color:#cfc6b4">Keep your tokens on every device and put your high scores on the leaderboards. Guests can keep playing without an account.</p>
+      <div class="qa-stack">
+        <button type="button" class="qa-btn" data-p="google"><svg width="16" height="16" viewBox="0 0 48 48" aria-hidden="true"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 7.9 3l5.7-5.7C34 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.4-.4-3.5z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.8 1.2 7.9 3l5.7-5.7C34 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.2 0-9.6-3.3-11.3-8l-6.5 5C9.5 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.2-4.1 5.6l6.2 5.2C37 39.2 44 34 44 24c0-1.3-.1-2.4-.4-3.5z"/></svg>Continue with Google</button>
+        <button type="button" class="qa-btn" data-p="github"><svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M8 0C3.6 0 0 3.6 0 8c0 3.5 2.3 6.5 5.5 7.6.4.1.5-.2.5-.4v-1.4c-2.2.5-2.7-1-2.7-1-.4-.9-.9-1.2-.9-1.2-.7-.5.1-.5.1-.5.8.1 1.2.8 1.2.8.7 1.3 1.9.9 2.4.7.1-.5.3-.9.5-1.1-1.8-.2-3.6-.9-3.6-4 0-.9.3-1.6.8-2.1-.1-.2-.4-1 .1-2.1 0 0 .7-.2 2.2.8.6-.2 1.3-.3 2-.3s1.4.1 2 .3c1.5-1 2.2-.8 2.2-.8.4 1.1.2 1.9.1 2.1.5.6.8 1.3.8 2.1 0 3.1-1.9 3.7-3.6 3.9.3.3.5.8.5 1.5v2.2c0 .2.1.5.6.4C13.7 14.5 16 11.5 16 8c0-4.4-3.6-8-8-8z"/></svg>Continue with GitHub</button>
+      </div>
+      <div class="qa-or">or</div>
+      <label>Email<input type="email" id="qa-email" autocomplete="email" placeholder="you@example.com"></label>
+      <button type="submit" class="qa-btn qa-pri">Email me a sign-in link</button>
+      <p class="qa-msg" id="qa-smsg" aria-live="polite"></p>
+      <div class="qa-row" style="justify-content:flex-start"><button type="button" class="qa-btn" data-cancel>Not now</button></div>
+    </form>`);
+    const el = m.el, $ = s => el.querySelector(s), msg = $('#qa-smsg');
+    const back = location.href.split('#')[0];
+    el.querySelectorAll('[data-p]').forEach(b => b.onclick = async () => {
+      b.disabled = true; msg.className = 'qa-msg'; msg.textContent = 'Opening ' + (b.dataset.p === 'google' ? 'Google' : 'GitHub') + '…';
+      const r = await acct.client.auth.signInWithOAuth({ provider: b.dataset.p, options: { redirectTo: back } });
+      if (r.error) { b.disabled = false; msg.className = 'qa-msg qa-err'; msg.textContent = 'That sign-in option is not available yet. Try the email link.'; }
+    });
+    $('form').addEventListener('submit', async e => {
+      e.preventDefault();
+      const email = $('#qa-email').value.trim();
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { msg.className = 'qa-msg qa-err'; msg.textContent = 'Enter a full email address, like name@example.com.'; $('#qa-email').focus(); return; }
+      const btn = $('button[type=submit]'); btn.disabled = true; msg.className = 'qa-msg'; msg.textContent = 'Sending…';
+      const r = await acct.client.auth.signInWithOtp({ email, options: { emailRedirectTo: back } });
+      btn.disabled = false;
+      if (r.error) { msg.className = 'qa-msg qa-err'; msg.textContent = /rate/i.test(r.error.message) ? 'Too many tries. Wait a minute and send again.' : 'The link could not be sent. Check the address and try again.'; }
+      else { msg.className = 'qa-msg'; msg.textContent = `Check ${email} for your sign-in link. You can close this window.`; }
+    });
+    $('[data-cancel]').onclick = () => m.close();
+    setTimeout(() => el.querySelector('[data-p]').focus(), 30);
+  }
+  function accountMenu() {
+    if (open) return;
+    if (!signedIn()) { signIn(); return; }
+    const w = acct.wallet || { tokens: 0, games_played: 0 };
+    const m = modal(`<form class="qa-form" aria-labelledby="qa-at" novalidate>
+      <h2 id="qa-at">Your account</h2>
+      <p style="font-size:14px;color:#cfc6b4">${esc(acct.user.email || '')}</p>
+      <div class="qa-row" style="justify-content:flex-start;gap:18px">
+        <div class="qa-count"><span>${w.tokens}</span><small>tokens</small></div>
+        <div class="qa-count"><span>${w.games_played || 0}</span><small>games played</small></div>
+      </div>
+      <label>Display name on leaderboards<input id="qa-name" maxlength="20" value="${esc(displayName())}"></label>
+      <p class="qa-msg" id="qa-amsg" aria-live="polite"></p>
+      <div class="qa-row" style="justify-content:flex-start">
+        <button type="submit" class="qa-btn qa-pri">Save name</button>
+        <a class="qa-btn" href="${rootHref()}leaderboards/">Leaderboards</a>
+        <button type="button" class="qa-btn" data-out>Sign out</button>
+        <button type="button" class="qa-btn" data-cancel>Close</button>
+      </div></form>`);
+    const el = m.el, $ = s => el.querySelector(s), msg = $('#qa-amsg');
+    $('form').addEventListener('submit', async e => {
+      e.preventDefault();
+      const name = $('#qa-name').value.trim();
+      if (name.length < 2) { msg.className = 'qa-msg qa-err'; msg.textContent = 'Use at least 2 characters.'; return; }
+      const r = await acct.client.from('profiles').update({ display_name: name }).eq('id', acct.user.id);
+      if (r.error) { msg.className = 'qa-msg qa-err'; msg.textContent = /unique|duplicate/i.test(r.error.message) ? 'That name is taken. Try another.' : 'The name could not be saved. Try again.'; }
+      else { acct.profile = { display_name: name }; msg.className = 'qa-msg'; msg.textContent = 'Saved.'; emit(); }
+    });
+    $('[data-out]').onclick = async () => { await acct.client.auth.signOut(); acct.user = null; acct.wallet = null; acct.profile = null; emit(); m.close(); toast('Signed out. You are playing as a guest.'); };
+    $('[data-cancel]').onclick = () => m.close();
+    setTimeout(() => $('#qa-name').focus(), 30);
+  }
 
   /* ---------- bug report ---------- */
   function currentGame() { const t = document.title; return GAMES.find(g => t.includes(g)) || 'Arcade home page'; }
@@ -231,10 +406,10 @@
     };
     const upd = () => { const t = text(); $('#qa-send').href = `https://github.com/${CONFIG.repo}/issues/new?labels=bug&title=${encodeURIComponent(t.title)}&body=${encodeURIComponent(t.body)}`; };
     ['#qa-what', '#qa-steps', '#qa-game'].forEach(s => $(s).addEventListener('input', upd)); upd();
-    $('#qa-send').addEventListener('click', e => { if (!$('#qa-what').value.trim()) { e.preventDefault(); $('#qa-msg').style.color = '#ff8a6a'; $('#qa-msg').textContent = 'Describe what went wrong first.'; $('#qa-what').focus(); return; } upd(); setTimeout(() => m.close(), 100); });
+    $('#qa-send').addEventListener('click', e => { if (!$('#qa-what').value.trim()) { e.preventDefault(); $('#qa-msg').className = 'qa-msg qa-err'; $('#qa-msg').textContent = 'Describe what went wrong first.'; $('#qa-what').focus(); return; } upd(); setTimeout(() => m.close(), 100); });
     $('#qa-copy').onclick = () => {
       const t = text(), s = t.title + '\n\n' + t.body;
-      const ok = () => { $('#qa-msg').style.color = ''; $('#qa-msg').textContent = 'Report copied.'; };
+      const ok = () => { $('#qa-msg').className = 'qa-msg'; $('#qa-msg').textContent = 'Report copied.'; };
       try { navigator.clipboard.writeText(s).then(ok, () => { $('#qa-what').select(); }); } catch (e) { $('#qa-what').select(); }
     };
     $('[data-cancel]').onclick = () => m.close();
@@ -245,13 +420,18 @@
   /* ---------- toolbar ---------- */
   function chip() {
     const b = document.createElement('span'); b.className = 'qa-chip'; b.title = `Tokens refill to ${CONFIG.dailyTokens} every day`;
-    const upd = () => { b.innerHTML = `${coinSVG(20)}<span>${freePlay ? 'Free play' : tokens() + ' token' + (tokens() === 1 ? '' : 's')}</span>`; };
+    const upd = () => { const n = tokens(); b.innerHTML = `${coinSVG(20)}<span>${freePlay ? 'Free play' : n + ' token' + (n === 1 ? '' : 's')}</span>`; };
     upd(); listeners.push(upd); return b;
+  }
+  function accountBtn() {
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'qa-chip';
+    const upd = () => { if (signedIn()) { const n = displayName(); b.innerHTML = `<span class="qa-av">${esc(n[0].toUpperCase())}</span>${esc(n)}`; b.style.paddingLeft = '5px'; } else { b.textContent = 'Sign in'; b.style.paddingLeft = ''; } };
+    upd(); listeners.push(upd); b.onclick = accountMenu; return b;
   }
   function bugBtn() { const b = document.createElement('button'); b.type = 'button'; b.className = 'qa-chip'; b.textContent = 'Report a bug'; b.onclick = reportBug; return b; }
   function mountBar() {
-    let host = document.querySelector('[data-qa-bar]');
-    const chips = document.createElement('div'); chips.className = 'qa-chips'; chips.append(chip(), bugBtn());
+    const host = document.querySelector('[data-qa-bar]');
+    const chips = document.createElement('div'); chips.className = 'qa-chips'; chips.append(chip(), accountBtn(), bugBtn());
     if (host) { host.classList.add('qa-bar'); host.appendChild(chips); return; }
     const back = document.querySelector('a.back');
     if (back) { const bar = document.createElement('div'); bar.className = 'qa-bar'; back.replaceWith(bar); bar.append(back, chips); return; }
@@ -259,7 +439,16 @@
     document.body.appendChild(chips);
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', mountBar); else mountBar();
-  addEventListener('storage', e => { if (e.key === KEY) listeners.forEach(f => f(tokens())); });
+  addEventListener('storage', e => { if (e.key === KEY) emit(); });
 
-  window.Arcade = { insertCoin, tokens, reportBug, coinSVG, onChange: f => listeners.push(f), get freePlay() { return freePlay; }, get dailyTokens() { return CONFIG.dailyTokens; } };
+  window.Arcade = {
+    insertCoin, tokens, reportBug, coinSVG, submitScore, topScores, signIn, accountMenu, toast,
+    onChange: f => listeners.push(f),
+    get freePlay() { return freePlay; }, get dailyTokens() { return CONFIG.dailyTokens; },
+    get accountsOn() { return acct.configured; }, get signedIn() { return signedIn(); }, get playerName() { return signedIn() ? displayName() : null; },
+    games: [
+      ['stack-shack', 'Stack Shack'], ['prairie-schooner', 'Prairie Schooner'], ['glitch-grid', 'Glitch Grid'], ['sunset-circuit', 'Sunset Circuit'],
+      ['spore-storm', 'Spore Storm'], ['rascal-road', 'Rascal Road'], ['iron-treads', 'Iron Treads'], ['starfall', 'Starfall'], ['ridgeline', 'Ridgeline']
+    ]
+  };
 })();

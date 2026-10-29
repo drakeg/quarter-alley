@@ -92,7 +92,7 @@ footer{border-top:1px solid var(--line);padding-block:18px;color:var(--muted);fo
   <div class="cabinets" id="cabinets"></div>
 </main>
 
-<footer class="wrap">Quarter Alley Arcade · Tokens and high scores are saved in your own browser. Something broken? <button type="button" id="footBug">Report a bug</button>.</footer>
+<footer class="wrap">Quarter Alley Arcade · Tokens and high scores are saved in your own browser. <a href="leaderboards/">Leaderboards</a> · Something broken? <button type="button" id="footBug">Report a bug</button>.</footer>
 
 <script src="assets/arcade.js"></script>
 <script>
@@ -268,6 +268,23 @@ const GAMES = [
       <rect x="77" y="82" width="6" height="14" fill="#d8dbe8"/><rect x="77" y="86" width="6" height="2" fill="#c24a4a"/><rect x="77" y="78" width="6" height="4" fill="#ffe9a8"/>
       <g fill="#3a3360"><rect x="34" y="96" width="5" height="8"/><rect x="40" y="93" width="5" height="11"/><rect x="112" y="95" width="5" height="9"/><rect x="118" y="93" width="5" height="11"/></g>
       <g fill="#ffd68c"><rect x="41" y="96" width="1.5" height="1.5"/><rect x="119" y="97" width="1.5" height="1.5"/></g>
+    </svg>`
+  },
+  {
+    title: "Ridgeline",
+    href: "games/ridgeline/",
+    blurb: "First-person tank combat on a neon valley floor. Read the radar, line up the sights and dodge incoming shells. Raiders, missiles and the odd saucer join the fight.",
+    tags: ["3D", "Tanks", "1 player"],
+    art: `<svg viewBox="0 0 160 120" aria-hidden="true">
+      <defs><linearGradient id="rlsky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#07041a"/><stop offset=".55" stop-color="#2a0a38"/><stop offset=".62" stop-color="#f2526a"/><stop offset=".63" stop-color="#05030c"/></linearGradient></defs>
+      <rect width="160" height="120" fill="url(#rlsky)"/>
+      <path d="M0 70 L20 58 L36 66 L58 46 L76 62 L96 50 L118 64 L138 54 L160 62" fill="none" stroke="#ff4a8a" stroke-width="1.2"/>
+      <path d="M0 74 L28 68 L52 72 L80 66 L110 72 L136 67 L160 72" fill="none" stroke="#3ff0e0" stroke-width="1"/>
+      <g stroke="#3ff0e0" stroke-width=".8" opacity=".55"><path d="M80 76 L0 120 M80 76 L40 120 M80 76 L80 120 M80 76 L120 120 M80 76 L160 120"/><path d="M0 84 H160 M0 94 H160 M0 108 H160"/></g>
+      <path d="M118 76 L128 60 L138 76 Z" fill="#0c0820" stroke="#3ff0e0" stroke-width="1"/>
+      <g fill="#0c0820" stroke="#ff4a6a" stroke-width="1"><rect x="62" y="70" width="16" height="5"/><rect x="66" y="66" width="8" height="4"/><path d="M66 68 H56"/></g>
+      <g fill="none" stroke="#ff4a6a" stroke-width="1.4"><path d="M58 60 V56 H66 M102 60 V56 H94 M58 84 V88 H66 M102 84 V88 H94"/></g>
+      <circle cx="80" cy="18" r="12" fill="rgba(6,20,22,.8)" stroke="#3ff0e0"/><circle cx="74" cy="13" r="1.6" fill="#ff4a6a"/>
     </svg>`
   }
 ];

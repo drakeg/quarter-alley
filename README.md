@@ -15,6 +15,7 @@ A static website of original retro-style browser games. No build step, no server
 | **Rascal Road** | Crossing game. Hop a raccoon across traffic and a creek to fill five dens before the timer runs out. |
 | **Iron Treads** | Top-down tanks with destructible brick. Campaign of 20-tank stages defending a beacon, plus a 2-player duel. |
 | **Starfall** | Defense. Fire flares from three batteries to burst meteors before they hit six seaside towns. |
+| **Ridgeline** | First-person 3D tank combat with radar, built with three.js. |
 
 ```
 quarter-alley/
@@ -31,7 +32,12 @@ quarter-alley/
     ├── spore-storm/index.html
     ├── rascal-road/index.html
     ├── iron-treads/index.html
-    └── starfall/index.html
+    ├── starfall/index.html
+    └── ridgeline/index.html
+├── leaderboards/index.html           ← public high scores (needs accounts)
+├── supabase/schema.sql               ← database for accounts, tokens and scores
+├── docs/LOGIN.md                     ← how to switch on accounts
+└── TODO.md                           ← roadmap
 ```
 
 ## Try it locally
@@ -82,6 +88,14 @@ To gate a new game, include the script and wrap its start:
   Arcade.insertCoin(start, { label: 'My Game · 1 token = 1 game' });
 </script>
 ```
+
+## Accounts and leaderboards
+
+Players can sign in with an email link, Google or GitHub. Signed-in players' tokens live on the server and their scores go to the [leaderboards](leaderboards/). Accounts are off until a Supabase project is connected; follow [docs/LOGIN.md](docs/LOGIN.md). Games report scores with `Arcade.submitScore(score)` at game over.
+
+## Roadmap
+
+See [TODO.md](TODO.md).
 
 ## Bug reports
 

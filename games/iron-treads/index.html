@@ -316,7 +316,7 @@ function update(dt){
   for(const pw of powers){pw.t-=dt;for(const p of players)if(p.alive&&overlap(p,pw)){takePower(pw,p);pw.t=0}}
   powers=powers.filter(p=>p.t>0);
 }
-function gameOver(){phase='over';S.over();try{localStorage.setItem('iron-treads-hi',String(hi))}catch(e){}}
+function gameOver(){phase='over';S.over();if(mode==='campaign')window.Arcade&&Arcade.submitScore(score);try{localStorage.setItem('iron-treads-hi',String(hi))}catch(e){}}
 
 /* ---------- drawing ---------- */
 let tex=null;

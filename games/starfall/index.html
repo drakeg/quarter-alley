@@ -160,7 +160,7 @@ function update(dt){
     }}
   bursts=bursts.filter(b=>!b.dead);meteors=meteors.filter(m=>!m.dead);
   for(const t of towns)if(!t.alive)t.smoke+=dt;
-  if(!towns.some(t=>t.alive)){phase='over';S.over();try{localStorage.setItem('starfall-hi',String(hi))}catch(e){}return}
+  if(!towns.some(t=>t.alive)){phase='over';S.over();window.Arcade&&Arcade.submitScore(score);try{localStorage.setItem('starfall-hi',String(hi))}catch(e){}return}
   if(toSpawn<=0&&!meteors.length&&!comets.length&&!flares.length&&!bursts.some(b=>b.friendly)){phase='tally';tally={step:0,t:.6,ammo:0,towns:0,list:[]};bats.forEach(b=>{if(b.alive)for(let i=0;i<b.ammo;i++)tally.list.push(['ammo',b])});towns.forEach(t=>{if(t.alive)tally.list.push(['town',t])})}
 }
 function impact(x){

@@ -136,7 +136,7 @@ function update(dt){
   for(const p of parts){p.x+=p.vx*dt;p.y+=p.vy*dt;p.vx*=.93;p.vy*=.93;p.t-=dt}parts=parts.filter(p=>p.t>0);
   for(const p of pops){p.t-=dt;p.y-=20*dt}pops=pops.filter(p=>p.t>0);
   if(paused||phase==='attract'||phase==='over')return;
-  if(phase==='dead'){phaseT-=dt;if(phaseT<=0){if(lives<=0){phase='over';saveHi();return}restoreSpores()}return}
+  if(phase==='dead'){phaseT-=dt;if(phaseT<=0){if(lives<=0){phase='over';saveHi();window.Arcade&&Arcade.submitScore(score);return}restoreSpores()}return}
   if(phase==='restore'){phaseT-=dt;return}
   if(phase==='wave'){phaseT-=dt;if(phaseT<=0){wave++;palette++;spawnCrawler();phase='play';S.wave()}return}
   // player

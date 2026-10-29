@@ -657,6 +657,7 @@ function endGame(lm){
   const goods=50+G.oxen*4+PARTS.reduce((s,k)=>s+G.parts[k]*2,0)+G.clothes*2+Math.floor(G.ammo/50)+Math.floor(G.food/25)+Math.floor(G.money/5)+G.meds*2;
   const mult=BGS[G.bg].mult,score=(pp+goods)*mult;
   const dest=lm.name==='Oregon City'?'Oregon City':'Sutter’s Fort';
+  window.Arcade&&Arcade.submitScore(score);
   const L=LS.get(LEDGER_KEY)||[];L.push({name:G.party[0].name,dest,alive:alive.length,score});L.sort((a,b)=>b.score-a.score);LS.set(LEDGER_KEY,L.slice(0,10));
   LS.del(SAVE_KEY);
   log(`Arrived at ${dest} on ${fmt(G.t)} with ${alive.length} of 5 still living.`);
