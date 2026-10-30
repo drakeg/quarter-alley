@@ -20,6 +20,8 @@ A static website of original retro-style browser games. No build step, no server
 | **Lifeline** | Side-scrolling rescue shooter. Stop snatchers carrying off colonists and catch them as they fall. |
 | **Canopy Run** | Jungle adventure. Vines, tar pits, crocodiles, tunnels and sixteen treasures against a ten-minute clock. |
 | **Spring Brawl** | Toy-robot boxing. Jab, haymaker, guard and dodge until a head pops off its spring. Ladder or 2 players. |
+| **Hive Swarm** | Fixed shooter vs clockwork bugs that dive from formation. Win back a captured ship to fly double. |
+| **Starting Blocks** | Four-event track meet: 100 m, hurdles, long jump and javelin. Make the qualifying marks. |
 
 ```
 quarter-alley/
@@ -41,7 +43,9 @@ quarter-alley/
     ├── driftrock/index.html
     ├── lifeline/index.html
     ├── canopy-run/index.html
-    └── spring-brawl/index.html
+    ├── spring-brawl/index.html
+    ├── hive-swarm/index.html
+    └── starting-blocks/index.html
 ├── leaderboards/index.html           ← public high scores (needs accounts)
 ├── supabase/schema.sql               ← database for accounts, tokens and scores
 ├── docs/LOGIN.md                     ← how to switch on accounts

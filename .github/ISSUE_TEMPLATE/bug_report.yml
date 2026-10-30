@@ -23,6 +23,8 @@ body:
         - Lifeline
         - Canopy Run
         - Spring Brawl
+        - Hive Swarm
+        - Starting Blocks
         - Accounts / sign-in
         - Leaderboards
     validations:

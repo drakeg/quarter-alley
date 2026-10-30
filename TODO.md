@@ -19,9 +19,10 @@ The running roadmap for the arcade. Check items off as they ship. Every game is 
 - [x] **Lifeline** – side-scrolling rescue shooter with a world scanner
 - [x] **Canopy Run** – jungle explorer: vines, tar pits, crocodiles, tunnels and treasure
 - [x] **Spring Brawl** – wind-up tin robots box until a head springs off; ladder or 2 players
+- [x] **Hive Swarm** – fixed shooter vs diving formations of clockwork bugs; win back a captured ship
+- [x] **Starting Blocks** – four-event track meet: sprint, hurdles, long jump, javelin
 
 ### Up next
-- [ ] **Hive Swarm** – fixed shooter vs diving formations of mechanical bugs
 - [ ] **Brickwave** – paddle, ball and bricks with power-ups
 - [ ] **Girder Gang** – climb girders and dodge rolling barrels to reach the top
 - [ ] **Flipside** – full pinball table with flippers, bumpers, ramps and multiball
