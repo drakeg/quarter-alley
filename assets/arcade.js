@@ -9,8 +9,8 @@
 (() => {
   'use strict';
   const CONFIG = {
-    startTokens: 10,      // tokens for a brand-new player
-    dailyTokens: 10,      // balance is topped up to this once per day
+    maxTokens: 30,        // free tokens refill up to this many (also what a new player starts with)
+    refillMinutes: 10,    // one free token comes back every this many minutes, up to maxTokens
     freePlay: false,      // true = no tokens needed anywhere (also: add ?freeplay to a URL)
     repo: 'drakeg/quarter-alley',
     // Accounts: paste your Supabase project URL and anon (public) key to switch sign-in on.
@@ -25,14 +25,24 @@
   const emit = () => listeners.forEach(f => { try { f(tokens()); } catch (e) {} });
 
   /* ---------- local (guest) wallet ---------- */
-  const today = () => { const d = new Date(); return `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`; };
+  const CAP = CONFIG.maxTokens, REFILL = CONFIG.refillMinutes * 60000;
   let mem = null;
+  // Tokens refill one at a time: every REFILL ms, up to CAP. Above CAP (gifts, purchases) nothing is added.
+  function regen(tokens, last, now) {
+    if (tokens >= CAP) return { tokens, last: now };
+    const gained = Math.floor((now - last) / REFILL);
+    if (gained <= 0) return { tokens, last };
+    const t = Math.min(CAP, tokens + gained);
+    return { tokens: t, last: t >= CAP ? now : last + gained * REFILL };
+  }
   function read() {
     let w = null;
     try { w = JSON.parse(localStorage.getItem(KEY)); } catch (e) {}
     if (!w && mem) w = mem;
-    if (!w || typeof w.tokens !== 'number') w = { tokens: CONFIG.startTokens, day: today(), played: 0 };
-    if (w.day !== today()) { w.day = today(); if (w.tokens < CONFIG.dailyTokens) w.tokens = CONFIG.dailyTokens; }
+    const now = Date.now();
+    if (!w || typeof w.tokens !== 'number') w = { tokens: CAP, last: now, played: 0 };
+    if (typeof w.last !== 'number') { w.tokens = Math.max(w.tokens, CAP); w.last = now; delete w.day; } // wallets from the old daily system get a full refill
+    const r = regen(w.tokens, w.last, now); w.tokens = r.tokens; w.last = r.last;
     return w;
   }
   function write(w) { mem = w; try { localStorage.setItem(KEY, JSON.stringify(w)); } catch (e) {} emit(); }
@@ -41,7 +51,20 @@
   /* ---------- accounts (Supabase) ---------- */
   const acct = { configured: !!(CONFIG.supabaseUrl && CONFIG.supabaseAnonKey), client: null, user: null, profile: null, wallet: null, ready: null, error: '' };
   const signedIn = () => !!(acct.client && acct.user);
-  function tokens() { return signedIn() && acct.wallet ? acct.wallet.tokens : read().tokens; }
+  const isAdmin = () => !!(signedIn() && acct.wallet && acct.wallet.is_admin);
+  function serverWallet() { // the server is the source of truth; this estimates refills between visits to it
+    const w = acct.wallet, last = w.last_regen ? Date.parse(w.last_regen) : Date.now();
+    return regen(w.tokens, last, Date.now());
+  }
+  function tokens() { if (isAdmin()) return Infinity; return signedIn() && acct.wallet ? serverWallet().tokens : read().tokens; }
+  function nextTokenIn() { // ms until the next free token, or null when full or unlimited
+    if (freePlay || isAdmin()) return null;
+    let t, last;
+    if (signedIn() && acct.wallet) { const w = serverWallet(); t = w.tokens; last = w.last; } else { const w = read(); t = w.tokens; last = w.last; }
+    return t >= CAP ? null : Math.max(0, last + REFILL - Date.now());
+  }
+  const fmtTokens = n => n === Infinity ? '∞' : String(n);
+  const fmtWait = ms => { const s = Math.ceil(ms / 1000); return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); };
   function loadScript(src) { return new Promise((res, rej) => { const s = document.createElement('script'); s.src = src; s.onload = res; s.onerror = () => rej(new Error('load')); document.head.appendChild(s); }); }
   async function refreshAccount() {
     if (!acct.client || !acct.user) { acct.profile = null; acct.wallet = null; emit(); return; }
@@ -190,7 +213,7 @@
     const r = await acct.client.rpc('spend_token');
     if (r.error) { const out = /out_of_tokens/.test(r.error.message || ''); throw new Error(out ? 'out' : 'net'); }
     const left = Array.isArray(r.data) ? r.data[0] : r.data;
-    if (acct.wallet) { acct.wallet.tokens = typeof left === 'number' ? left : Math.max(0, acct.wallet.tokens - 1); acct.wallet.games_played = (acct.wallet.games_played || 0) + 1; }
+    if (acct.wallet) { if (!acct.wallet.is_admin) { acct.wallet.tokens = typeof left === 'number' ? left : Math.max(0, acct.wallet.tokens - 1); if (acct.wallet.tokens < CAP && serverWallet().tokens >= CAP - 1) acct.wallet.last_regen = new Date().toISOString(); } acct.wallet.games_played = (acct.wallet.games_played || 0) + 1; }
     emit();
   }
   async function insertCoin(onCredit, opts = {}) {
@@ -204,7 +227,7 @@
     const who = server ? `Signed in as ${esc(displayName())}` : (acct.configured && acct.client ? 'Playing as a guest' : '');
     const m = modal(`<div class="qa-door ${outOf ? '' : 'qa-ready'}" aria-labelledby="qa-t">
         <p class="qa-marq" id="qa-t">${outOf ? 'OUT OF TOKENS' : 'INSERT TOKEN'}</p>
-        <p class="qa-sub">${outOf ? `Your free tokens refill to ${CONFIG.dailyTokens} tomorrow.` : esc(opts.label || '1 token = 1 game')}</p>
+        <p class="qa-sub" data-wait>${outOf ? `Next free token in ${fmtWait(nextTokenIn() || REFILL)}.` : esc(opts.label || '1 token = 1 game')}</p>
         <div class="qa-slots">
           <button type="button" class="qa-slot ${outOf ? 'qa-off' : ''}" data-slot aria-label="Coin slot: insert a token"><span class="qa-slit"></span><span class="qa-lamp">1 TOKEN<small>PUSH</small></span></button>
           <button type="button" class="qa-slot qa-off" tabindex="-1" aria-hidden="true" disabled><span class="qa-slit"></span><span class="qa-lamp">1 TOKEN<small>PLAYER 2</small></span></button>
@@ -212,7 +235,7 @@
         <div class="qa-credit" aria-live="polite">CREDIT 00</div>
         <div class="qa-tray">
           ${outOf ? '' : `<button type="button" class="qa-coin" data-coin aria-label="Token: drag to the slot, click, or press Enter">${coinSVG(58)}</button>`}
-          <div class="qa-count"><span data-n>${n}</span><small>token${n === 1 ? '' : 's'} left</small></div>
+          <div class="qa-count"><span data-n>${fmtTokens(n)}</span><small>${n === Infinity ? 'admin · unlimited' : 'token' + (n === 1 ? '' : 's') + ' left'}</small></div>
         </div>
         <p class="qa-sub" data-note>${outOf ? '' : 'Drag the token into the slot, click it, or press Enter.'}</p>
         ${who ? `<p class="qa-sub" style="opacity:.75">${who}</p>` : ''}
@@ -225,8 +248,8 @@
       if (busy || outOf) return; busy = true;
       let paid;
       if (server) paid = spendServer();
-      else { const w = read(); w.tokens = Math.max(0, w.tokens - 1); w.played = (w.played || 0) + 1; write(w); paid = Promise.resolve(); }
-      el.querySelector('[data-n]').textContent = Math.max(0, n - 1);
+      else { const w = read(); if (w.tokens >= CAP) w.last = Date.now(); w.tokens = Math.max(0, w.tokens - 1); w.played = (w.played || 0) + 1; write(w); paid = Promise.resolve(); }
+      el.querySelector('[data-n]').textContent = fmtTokens(Math.max(0, n - 1));
       const s = el.querySelector('.qa-slit').getBoundingClientRect(), c = coin.getBoundingClientRect();
       const fly = document.createElement('div'); fly.className = 'qa-fly'; fly.innerHTML = coinSVG(58);
       fly.style.left = c.left + 'px'; fly.style.top = c.top + 'px'; (document.fullscreenElement || document.body).appendChild(fly);
@@ -239,8 +262,8 @@
         try { await paid; }
         catch (e) {
           const note = el.querySelector('[data-note]'); note.className = 'qa-sub qa-err';
-          note.textContent = e.message === 'out' ? 'Your account is out of tokens. They refill tomorrow.' : 'Could not reach the arcade server. Check your connection and try again.';
-          coin.style.visibility = ''; busy = false; el.querySelector('[data-n]').textContent = tokens(); return;
+          note.textContent = e.message === 'out' ? 'Your account is out of tokens. One comes back every ' + CONFIG.refillMinutes + ' minutes.' : 'Could not reach the arcade server. Check your connection and try again.';
+          coin.style.visibility = ''; busy = false; el.querySelector('[data-n]').textContent = fmtTokens(tokens()); return;
         }
         slot.classList.add('qa-hot');
         el.querySelector('.qa-credit').textContent = 'CREDIT 01'; creditSound();
@@ -273,7 +296,14 @@
       coin.addEventListener('pointerup', end); coin.addEventListener('pointercancel', end);
       m.onKey = e => { if (e.key === 'Enter' || e.key === ' ') { if (document.activeElement && document.activeElement.matches('[data-cancel],a')) return; e.preventDefault(); insert(); } };
       setTimeout(() => coin.focus({ preventScroll: true }), 30);
-    } else setTimeout(() => el.querySelector('[data-cancel]').focus(), 30);
+    } else {
+      setTimeout(() => el.querySelector('[data-cancel]').focus(), 30);
+      const tick = setInterval(() => {
+        if (!el.isConnected) { clearInterval(tick); return; }
+        if (tokens() > 0) { clearInterval(tick); m.close(); insertCoin(onCredit, opts); return; }
+        el.querySelector('[data-wait]').textContent = `Next free token in ${fmtWait(nextTokenIn() || REFILL)}.`;
+      }, 1000);
+    }
   }
   function rootHref() { const p = location.pathname; return p.includes('/games/') ? '../../' : p.includes('/leaderboards/') ? '../' : './'; }
   function homeHref() { return rootHref(); }
@@ -354,11 +384,18 @@
       <h2 id="qa-at">Your account</h2>
       <p style="font-size:14px;color:#cfc6b4">${esc(acct.user.email || '')}</p>
       <div class="qa-row" style="justify-content:flex-start;gap:18px">
-        <div class="qa-count"><span>${w.tokens}</span><small>tokens</small></div>
+        <div class="qa-count"><span>${fmtTokens(tokens())}</span><small>${isAdmin() ? 'admin · unlimited' : 'tokens'}</small></div>
         <div class="qa-count"><span>${w.games_played || 0}</span><small>games played</small></div>
       </div>
       <label>Display name on leaderboards<input id="qa-name" maxlength="20" value="${esc(displayName())}"></label>
       <p class="qa-msg" id="qa-amsg" aria-live="polite"></p>
+      ${isAdmin() ? `<fieldset style="border:1px solid rgba(255,255,255,.14);border-radius:8px;padding:10px 12px;display:flex;flex-direction:column;gap:8px;margin:0">
+        <legend style="font-size:12px;color:#f2b632;padding:0 4px">Admin · give tokens</legend>
+        <label>Player's email<input type="email" id="qa-gemail" autocomplete="off" placeholder="player@example.com"></label>
+        <label>Tokens<input type="number" id="qa-gamt" min="1" max="10000" value="25" inputmode="numeric"></label>
+        <div><button type="button" class="qa-btn" id="qa-grant">Give tokens</button></div>
+        <p class="qa-msg" id="qa-gmsg" aria-live="polite"></p>
+      </fieldset>` : ''}
       <div class="qa-row" style="justify-content:flex-start">
         <button type="submit" class="qa-btn qa-pri">Save name</button>
         <a class="qa-btn" href="${rootHref()}leaderboards/">Leaderboards</a>
@@ -374,6 +411,14 @@
       if (r.error) { msg.className = 'qa-msg qa-err'; msg.textContent = /unique|duplicate/i.test(r.error.message) ? 'That name is taken. Try another.' : 'The name could not be saved. Try again.'; }
       else { acct.profile = { display_name: name }; msg.className = 'qa-msg'; msg.textContent = 'Saved.'; emit(); }
     });
+    if (isAdmin()) $('#qa-grant').onclick = async () => {
+      const email = $('#qa-gemail').value.trim(), amt = parseInt($('#qa-gamt').value, 10), gm = $('#qa-gmsg');
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { gm.className = 'qa-msg qa-err'; gm.textContent = 'Enter the email the player signs in with.'; return; }
+      if (!(amt >= 1 && amt <= 10000)) { gm.className = 'qa-msg qa-err'; gm.textContent = 'Give between 1 and 10,000 tokens.'; return; }
+      const r = await acct.client.rpc('grant_tokens', { p_email: email, p_amount: amt });
+      if (r.error) { gm.className = 'qa-msg qa-err'; gm.textContent = /no_such_player/.test(r.error.message) ? 'No player has signed in with that email yet.' : 'The tokens could not be given. Try again.'; }
+      else { gm.className = 'qa-msg'; gm.textContent = `Gave ${amt} tokens. They now have ${r.data}.`; }
+    };
     $('[data-out]').onclick = async () => { await acct.client.auth.signOut(); acct.user = null; acct.wallet = null; acct.profile = null; emit(); m.close(); toast('Signed out. You are playing as a guest.'); };
     $('[data-cancel]').onclick = () => m.close();
     setTimeout(() => $('#qa-name').focus(), 30);
@@ -419,8 +464,12 @@
 
   /* ---------- toolbar ---------- */
   function chip() {
-    const b = document.createElement('span'); b.className = 'qa-chip'; b.title = `Tokens refill to ${CONFIG.dailyTokens} every day`;
-    const upd = () => { const n = tokens(); b.innerHTML = `${coinSVG(20)}<span>${freePlay ? 'Free play' : n + ' token' + (n === 1 ? '' : 's')}</span>`; };
+    const b = document.createElement('span'); b.className = 'qa-chip';
+    const upd = () => {
+      const n = tokens(), wait = nextTokenIn();
+      b.innerHTML = `${coinSVG(20)}<span>${freePlay ? 'Free play' : n === Infinity ? '∞ Admin' : n + ' token' + (n === 1 ? '' : 's')}</span>`;
+      b.title = n === Infinity ? 'Admin account: unlimited tokens' : wait === null ? `Full. You hold up to ${CAP} free tokens.` : `Next free token in ${fmtWait(wait)}. One comes back every ${CONFIG.refillMinutes} minutes, up to ${CAP}.`;
+    };
     upd(); listeners.push(upd); return b;
   }
   function accountBtn() {
@@ -440,11 +489,15 @@
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', mountBar); else mountBar();
   addEventListener('storage', e => { if (e.key === KEY) emit(); });
+  let lastShown = null;
+  setInterval(() => { if (!signedIn()) write(read()); const n = tokens(); if (n !== lastShown) { lastShown = n; emit(); } }, 5000);
+  setInterval(() => { if (signedIn() && !document.hidden) refreshAccount(); }, 120000);
 
   window.Arcade = {
     insertCoin, tokens, reportBug, coinSVG, submitScore, topScores, signIn, accountMenu, toast,
     onChange: f => listeners.push(f),
-    get freePlay() { return freePlay; }, get dailyTokens() { return CONFIG.dailyTokens; },
+    get freePlay() { return freePlay; }, get maxTokens() { return CAP; }, get refillMinutes() { return CONFIG.refillMinutes; },
+    get isAdmin() { return isAdmin(); }, nextTokenIn, fmtTokens, fmtWait,
     get accountsOn() { return acct.configured; }, get signedIn() { return signedIn(); }, get playerName() { return signedIn() ? displayName() : null; },
     games: [
       ['stack-shack', 'Stack Shack'], ['prairie-schooner', 'Prairie Schooner'], ['glitch-grid', 'Glitch Grid'], ['sunset-circuit', 'Sunset Circuit'],

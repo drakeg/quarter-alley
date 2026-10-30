@@ -4,6 +4,7 @@ The arcade works without accounts: everyone plays as a guest and tokens and high
 
 - sign in with an email link, Google or GitHub
 - keep their tokens on every device (tokens are spent on the server, so they can't be edited in the browser)
+- if they're an admin, play with unlimited tokens and give tokens to other players
 - save high scores and appear on the [leaderboards](../leaderboards/)
 
 Accounts use [Supabase](https://supabase.com), which has a free tier that comfortably covers a hobby arcade.
@@ -38,7 +39,21 @@ The anon key is designed to be public. The database rules in `schema.sql` decide
 
 Commit and push. A **Sign in** button now works on every page.
 
-## 4. Optional: Google and GitHub sign-in
+## 4. Make yourself an admin
+
+1. Open the live site and sign in once (this creates your player record).
+2. In Supabase, open **SQL Editor → New query**, paste this with **your** email, and click **Run**:
+
+```sql
+update public.wallets set is_admin = true
+where user_id = (select id from auth.users where lower(email) = lower('you@example.com'));
+```
+
+3. Refresh the site. The token counter shows **∞ Admin**, games never cost you a token, and your account menu gains a **Give tokens** form for sending tokens to any player by email.
+
+Run the query in Supabase only; don't put your email in the repo. Add more admins the same way, or remove one with `set is_admin = false`. Players can't make themselves admins: the database only lets this query, run from the dashboard, change that flag.
+
+## 5. Optional: Google and GitHub sign-in
 
 Email links work as soon as the steps above are done. To add the buttons for Google and GitHub:
 
@@ -55,7 +70,7 @@ Until a provider is enabled, its button tells players to use the email link inst
 | Tables, security rules, token and score functions | `supabase/schema.sql` |
 | Public leaderboards | `leaderboards/index.html` |
 
-- **Tokens:** guests keep a local balance. Signed-in players use their server wallet: 10 to start, topped back up to 10 each day (UTC), one spent per game through `spend_token()`.
+- **Tokens:** everyone holds up to 30 free tokens, and one comes back every 10 minutes until they're full again. Guests keep that balance in their browser; signed-in players keep it on the server, spent one per game through `spend_token()`. Tokens given by an admin can go above 30; refills only top up to 30. Admins never spend tokens.
 - **Scores:** games call `Arcade.submitScore(score)` at game over. Signed-in players' scores are saved; guests get a prompt to sign in.
 - **Leaderboards:** `top_scores(game)` returns each player's best score for a game, top 10.
 

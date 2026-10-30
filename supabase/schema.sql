@@ -11,10 +11,16 @@ create table if not exists public.profiles (
 
 create table if not exists public.wallets (
   user_id uuid primary key references auth.users (id) on delete cascade,
-  tokens integer not null default 10 check (tokens >= 0),
-  last_refill date not null default current_date,
-  games_played integer not null default 0
+  tokens integer not null default 30 check (tokens >= 0),
+  last_regen timestamptz not null default now(),
+  games_played integer not null default 0,
+  is_admin boolean not null default false
 );
+-- upgrades for projects created from an earlier version of this file
+alter table public.wallets add column if not exists last_regen timestamptz not null default now();
+alter table public.wallets add column if not exists is_admin boolean not null default false;
+alter table public.wallets drop column if exists last_refill;
+alter table public.wallets alter column tokens set default 30;
 
 create table if not exists public.scores (
   id bigint generated always as identity primary key,
@@ -65,28 +71,63 @@ create trigger on_auth_user_created after insert on auth.users
   for each row execute function public.handle_new_user();
 
 -- ---------- wallet functions ----------
--- Returns the player's wallet, topping it back up to 10 once per day.
+-- Free tokens: one comes back every 10 minutes, up to 30. Admins never spend tokens.
+-- get_wallet is replaced below by a version with a different result shape, so drop it first.
+drop function if exists public.get_wallet();
+
 create or replace function public.get_wallet()
-returns setof public.wallets language plpgsql security definer set search_path = public as $$
+returns table (tokens integer, games_played integer, is_admin boolean, last_regen timestamptz)
+language plpgsql security definer set search_path = public as $$
+declare cap constant integer := 30; step constant interval := interval '10 minutes';
+        w public.wallets; gained integer;
 begin
   if auth.uid() is null then raise exception 'not_signed_in'; end if;
   insert into public.wallets (user_id) values (auth.uid()) on conflict do nothing;
-  update public.wallets set tokens = greatest(tokens, 10), last_refill = current_date
-    where user_id = auth.uid() and last_refill < current_date;
-  return query select * from public.wallets where user_id = auth.uid();
+  select * into w from public.wallets where user_id = auth.uid() for update;
+  if w.tokens >= cap then
+    update public.wallets set last_regen = now() where user_id = auth.uid();
+  else
+    gained := floor(extract(epoch from (now() - w.last_regen)) / extract(epoch from step))::integer;
+    if gained > 0 then
+      update public.wallets set
+        tokens = least(cap, w.tokens + gained),
+        last_regen = case when w.tokens + gained >= cap then now() else w.last_regen + gained * step end
+      where user_id = auth.uid();
+    end if;
+  end if;
+  return query select x.tokens, x.games_played, x.is_admin, x.last_regen from public.wallets x where x.user_id = auth.uid();
 end $$;
 
--- Spends one token. Returns the tokens left, or raises out_of_tokens.
+-- Spends one token (admins: free). Returns the tokens left, or raises out_of_tokens.
 create or replace function public.spend_token()
 returns integer language plpgsql security definer set search_path = public as $$
-declare left_now integer;
+declare left_now integer; admin boolean;
 begin
   perform public.get_wallet();
+  select x.is_admin into admin from public.wallets x where x.user_id = auth.uid();
+  if admin then
+    update public.wallets set games_played = games_played + 1 where user_id = auth.uid() returning tokens into left_now;
+    return left_now;
+  end if;
   update public.wallets set tokens = tokens - 1, games_played = games_played + 1
     where user_id = auth.uid() and tokens > 0
     returning tokens into left_now;
   if left_now is null then raise exception 'out_of_tokens'; end if;
   return left_now;
+end $$;
+
+-- Admins can give tokens to any player by email (for prizes, testers, support).
+create or replace function public.grant_tokens(p_email text, p_amount integer)
+returns integer language plpgsql security definer set search_path = public as $$
+declare target uuid; result integer;
+begin
+  if not exists (select 1 from public.wallets where user_id = auth.uid() and is_admin) then raise exception 'admins_only'; end if;
+  if p_amount is null or p_amount < 1 or p_amount > 10000 then raise exception 'bad_amount'; end if;
+  select id into target from auth.users where lower(email) = lower(p_email);
+  if target is null then raise exception 'no_such_player'; end if;
+  insert into public.wallets (user_id) values (target) on conflict do nothing;
+  update public.wallets set tokens = tokens + p_amount where user_id = target returning tokens into result;
+  return result;
 end $$;
 
 -- ---------- score functions ----------
@@ -120,7 +161,14 @@ $$;
 revoke all on function public.get_wallet() from public, anon;
 revoke all on function public.spend_token() from public, anon;
 revoke all on function public.submit_score(text, integer) from public, anon;
+revoke all on function public.grant_tokens(text, integer) from public, anon;
+grant execute on function public.grant_tokens(text, integer) to authenticated;
 grant execute on function public.get_wallet() to authenticated;
 grant execute on function public.spend_token() to authenticated;
 grant execute on function public.submit_score(text, integer) to authenticated;
 grant execute on function public.top_scores(text, integer) to anon, authenticated;
+
+-- ---------- make yourself an admin ----------
+-- Sign in on the site once, then run this with your own email (do not commit your email to the repo):
+--   update public.wallets set is_admin = true
+--   where user_id = (select id from auth.users where lower(email) = lower('you@example.com'));

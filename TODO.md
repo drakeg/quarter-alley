@@ -44,7 +44,8 @@ The running roadmap for the arcade. Check items off as they ship. Every game is 
 ## Platform
 
 ### Accounts and tokens
-- [x] Token wallet with 10 free tokens a day (local, per browser)
+- [x] Token wallet: up to 30 free tokens, one back every 10 minutes (browser for guests, server for players)
+- [x] Admin accounts: unlimited tokens and a Give tokens form
 - [x] Insert-token coin slot on every game
 - [x] Sign-in with email link, Google or GitHub (Supabase), guest play still works
 - [x] Tokens stored on the server for signed-in players (spending happens server-side)

@@ -82,7 +82,7 @@ footer{border-top:1px solid var(--line);padding-block:18px;color:var(--muted);fo
       <div class="coin" id="boothCoin"></div>
       <span>Your tokens</span>
       <b id="boothN">10</b>
-      <p id="boothP">Each game costs 1 token. You get 10 free tokens every day.</p>
+      <p id="boothP">Each game costs 1 token. You hold up to 30 free tokens, and one comes back every 10 minutes.</p>
     </aside>
   </div>
 </header>
@@ -354,9 +354,16 @@ soon.innerHTML = `<div class="marq">Next cabinet</div><div class="screen">COMING
 host.appendChild(soon);
 if (window.Arcade) {
   document.getElementById("boothCoin").innerHTML = Arcade.coinSVG(64);
-  const upd = () => { document.getElementById("boothN").textContent = Arcade.freePlay ? "Free" : Arcade.tokens(); };
+  const baseP = document.getElementById("boothP").textContent;
+  const upd = () => {
+    const n = Arcade.tokens(), wait = Arcade.nextTokenIn();
+    document.getElementById("boothN").textContent = Arcade.freePlay ? "Free" : Arcade.fmtTokens(n);
+    document.getElementById("boothP").textContent = Arcade.freePlay ? "Free play is on. No tokens needed."
+      : Arcade.isAdmin ? "Admin account: unlimited tokens."
+      : wait === null ? baseP : `Next free token in ${Arcade.fmtWait(wait)}. You hold up to ${Arcade.maxTokens}, and one comes back every ${Arcade.refillMinutes} minutes.`;
+  };
+  setInterval(upd, 1000);
   upd(); Arcade.onChange(upd);
-  if (Arcade.freePlay) document.getElementById("boothP").textContent = "Free play is on. No tokens needed.";
   document.getElementById("footBug").onclick = () => Arcade.reportBug();
 }
 document.getElementById("count").textContent = `${GAMES.length} ${GAMES.length === 1 ? "game" : "games"}`;

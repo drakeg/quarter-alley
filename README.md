@@ -84,8 +84,9 @@ Every game here is an original design: its own name, characters, story and art. 
 
 Every game start goes through `Arcade.insertCoin(callback)` in `assets/arcade.js`, which shows the coin-slot screen and spends one token.
 
-- New players get 10 tokens, and the balance is topped back up to 10 every day.
-- Settings are at the top of `assets/arcade.js` (`startTokens`, `dailyTokens`, `freePlay`).
+- Every player holds up to 30 free tokens, and one comes back every 10 minutes until they're full again. Each page shows when the next one arrives.
+- Admins (set in the database, see `docs/LOGIN.md`) play free and can give tokens to other players.
+- Settings are at the top of `assets/arcade.js` (`maxTokens`, `refillMinutes`, `freePlay`). Keep them in step with the numbers in `supabase/schema.sql`.
 - Add `?freeplay` to any game URL to test without spending tokens.
 - Tokens live in the player's browser (localStorage). That is fine for free tokens, but anyone can edit them, so selling tokens for real money needs a small backend with accounts and server-side balances.
 
