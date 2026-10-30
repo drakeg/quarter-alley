@@ -18,6 +18,7 @@ The running roadmap for the arcade. Check items off as they ship. Every game is 
 - [x] **Driftrock** – drifting ship blasting space rocks that break apart
 - [x] **Lifeline** – side-scrolling rescue shooter with a world scanner
 - [x] **Canopy Run** – jungle explorer: vines, tar pits, crocodiles, tunnels and treasure
+- [x] **Spring Brawl** – wind-up tin robots box until a head springs off; ladder or 2 players
 
 ### Up next
 - [ ] **Hive Swarm** – fixed shooter vs diving formations of mechanical bugs

@@ -19,6 +19,7 @@ A static website of original retro-style browser games. No build step, no server
 | **Driftrock** | Space shooter. A drifting ship splits glowing rocks into smaller pieces; saucers hunt you. |
 | **Lifeline** | Side-scrolling rescue shooter. Stop snatchers carrying off colonists and catch them as they fall. |
 | **Canopy Run** | Jungle adventure. Vines, tar pits, crocodiles, tunnels and sixteen treasures against a ten-minute clock. |
+| **Spring Brawl** | Toy-robot boxing. Jab, haymaker, guard and dodge until a head pops off its spring. Ladder or 2 players. |
 
 ```
 quarter-alley/
@@ -39,7 +40,8 @@ quarter-alley/
     ├── ridgeline/index.html
     ├── driftrock/index.html
     ├── lifeline/index.html
-    └── canopy-run/index.html
+    ├── canopy-run/index.html
+    └── spring-brawl/index.html
 ├── leaderboards/index.html           ← public high scores (needs accounts)
 ├── supabase/schema.sql               ← database for accounts, tokens and scores
 ├── docs/LOGIN.md                     ← how to switch on accounts
