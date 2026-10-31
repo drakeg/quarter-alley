@@ -21,6 +21,7 @@ The running roadmap for the arcade. Check items off as they ship. Every game is 
 - [x] **Spring Brawl** – wind-up tin robots box until a head springs off; ladder or 2 players
 - [x] **Hive Swarm** – fixed shooter vs diving formations of clockwork bugs; win back a captured ship
 - [x] **Starting Blocks** – four-event track meet: sprint, hurdles, long jump, javelin
+- [x] **Burrow Bash** – dig through garden soil, pump pests until they pop, drop stones on them
 
 ### Up next
 - [ ] **Brickwave** – paddle, ball and bricks with power-ups
@@ -34,7 +35,6 @@ The running roadmap for the arcade. Check items off as they ship. Every game is 
 - [ ] **Leapwise** – wake up in a stranger's life in a different decade; put one thing right before you leap again (time-hop adventure)
 
 ### Later
-- [ ] **Burrow Bash** – tunnel through a garden and pop pests
 - [ ] **Cube Hop** – hop a pyramid of cubes to change their colors
 - [ ] **Skyknights** – riders on flying mounts clash in the air, great for two players
 - [ ] **Soft Landing** – land a craft gently with limited fuel
