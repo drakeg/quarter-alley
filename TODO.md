@@ -22,6 +22,7 @@ The running roadmap for the arcade. Check items off as they ship. Every game is 
 - [x] **Hive Swarm** – fixed shooter vs diving formations of clockwork bugs; win back a captured ship
 - [x] **Starting Blocks** – four-event track meet: sprint, hurdles, long jump, javelin
 - [x] **Burrow Bash** – dig through garden soil, pump pests until they pop, drop stones on them
+- [x] **Marsh Shot** – aim-and-fire marsh bird shoot with a laughing hound; 1 bird, 2 birds or clay discs
 
 ### Up next
 - [ ] **Brickwave** – paddle, ball and bricks with power-ups

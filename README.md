@@ -23,6 +23,7 @@ A static website of original retro-style browser games. No build step, no server
 | **Hive Swarm** | Fixed shooter vs clockwork bugs that dive from formation. Win back a captured ship to fly double. |
 | **Starting Blocks** | Four-event track meet: 100 m, hurdles, long jump and javelin. Make the qualifying marks. |
 | **Burrow Bash** | Dig under the garden, pump pests until they pop and drop stones on them. |
+| **Marsh Shot** | Aim-and-fire bird shoot at sundown with a hound who laughs at your misses. 1 bird, 2 birds or clay discs. |
 
 ```
 quarter-alley/
@@ -47,7 +48,8 @@ quarter-alley/
     ├── spring-brawl/index.html
     ├── hive-swarm/index.html
     ├── starting-blocks/index.html
-    └── burrow-bash/index.html
+    ├── burrow-bash/index.html
+    └── marsh-shot/index.html
 ├── leaderboards/index.html           ← public high scores (needs accounts)
 ├── supabase/schema.sql               ← database for accounts, tokens and scores
 ├── docs/LOGIN.md                     ← how to switch on accounts
