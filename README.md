@@ -29,6 +29,7 @@ A static website of original retro-style browser games. No build step, no server
 | **Soft Landing** | Lunar lander: feather thrust and fuel to touch down softly on multiplier pads. |
 | **Cube Hop** | Hop a pyramid of cubes to change every top to the target color, dodging bouncers and a spring chaser. |
 | **Fenceline** | Draw fences to claim 75% of the field while a roaming tangle and border embers hunt you. |
+| **Lightline** | Trail duel: your rider leaves a wall of light. Solo vs CPU riders or two players. |
 
 ```
 quarter-alley/
@@ -59,7 +60,8 @@ quarter-alley/
     ├── bunker-line/index.html
     ├── soft-landing/index.html
     ├── cube-hop/index.html
-    └── fenceline/index.html
+    ├── fenceline/index.html
+    └── lightline/index.html
 ├── leaderboards/index.html           ← public high scores (needs accounts)
 ├── supabase/schema.sql               ← database for accounts, tokens and scores
 ├── docs/LOGIN.md                     ← how to switch on accounts

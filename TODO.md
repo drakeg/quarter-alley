@@ -28,6 +28,7 @@ The running roadmap for the arcade. Check items off as they ship. Every game is 
 - [x] **Soft Landing** – lunar lander with fuel, zoom-in near the surface and multiplier pads
 - [x] **Cube Hop** – hop a cube pyramid to change every top's color; bouncers, a spring chaser and escape discs
 - [x] **Fenceline** – claim territory by drawing fences, with a roaming tangle, border embers and fast/slow fences
+- [x] **Lightline** – light-trail duel: solo vs up to three CPU riders, or two players on one keyboard
 
 ### Up next
 - [ ] **Girder Gang** – climb girders and dodge rolling barrels to reach the top
@@ -41,7 +42,6 @@ The running roadmap for the arcade. Check items off as they ship. Every game is 
 
 ### Later
 - [ ] **Skyknights** – riders on flying mounts clash in the air, great for two players
-- [ ] **Lightline** – light-trail duels for 2–4 players
 - [ ] **Blast Block** – bomb-maze party game for up to 4 gamepads
 - [ ] **Twin Fury** – twin-stick arena survival
 - [ ] **Tube Rider** – shoot your way down a 3D tube
