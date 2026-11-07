@@ -1,0 +1,239 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Fenceline</title>
+<meta name="description" content="Fenceline: draw fences across an open field to claim territory. Box in three quarters of it while a tangle of light roams loose and embers race along your lines.">
+<link rel="icon" href="../../assets/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;700&display=swap">
+<style>
+/* Layout: wide play field with rules below. Single dark theme by design. */
+:root{
+  --bg:#070a10;
+  --line:#1f2a3a;
+  --text:#eaf6ff;
+  --muted:#8ea3bb;
+  --fast:#3fd8ff;     /* accent */
+  --slow:#ff9a3c;
+  --font:"Chakra Petch","Segoe UI",system-ui,sans-serif;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--text)}
+body{font-family:var(--font);font-size:15px;line-height:1.55;font-weight:500}
+.wrap{max-width:1000px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:16px 32px;display:flex;flex-direction:column;gap:14px}
+.back{font-size:12px;color:var(--muted);text-decoration:none;letter-spacing:.12em;text-transform:uppercase}
+.back:hover,.back:focus-visible{color:var(--fast)}
+.title{display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap}
+h1{font-weight:700;font-size:clamp(32px,6vw,50px);margin:0;line-height:1;letter-spacing:.06em;color:var(--fast);text-shadow:0 0 18px rgba(63,216,255,.4)}
+.tag{margin:0;color:var(--muted)}
+.screen{border-radius:12px;overflow:hidden;box-shadow:0 0 0 1px var(--line),0 20px 60px rgba(0,0,0,.6)}
+canvas{display:block;width:100%;height:auto;aspect-ratio:680/560;touch-action:none;background:#000;max-width:100%}
+.pad{display:none;justify-content:space-between;align-items:center;padding:8px;background:#0c121c;gap:8px}
+.dpad{display:grid;grid-template-columns:repeat(3,54px);grid-template-rows:repeat(3,54px);gap:4px}
+.dpad [data-k=up]{grid-column:2;grid-row:1}.dpad [data-k=left]{grid-column:1;grid-row:2}.dpad [data-k=right]{grid-column:3;grid-row:2}.dpad [data-k=down]{grid-column:2;grid-row:3}
+.pad button{border-radius:10px;border:1px solid var(--line);background:#121b28;color:var(--text);font:700 16px var(--font);touch-action:none;user-select:none;-webkit-user-select:none}
+.draws{display:flex;gap:10px}
+.draws button{width:84px;height:84px;border-radius:50%}
+.draws .f{border-color:var(--fast);color:var(--fast)}.draws .s{border-color:var(--slow);color:var(--slow)}
+.pad button.on{background:var(--line)}
+@media (pointer:coarse){.pad{display:flex}}
+.rules{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;font-size:14px;color:var(--muted)}
+.rules h2{font-size:17px;margin:0 0 2px;color:var(--text)}
+.rules p{margin:0}
+.f{color:var(--fast)}.s{color:var(--slow)}
+.keys{font-size:13px;color:var(--muted);margin:0}
+kbd{font-family:ui-monospace,Menlo,monospace;font-size:11px;background:rgba(255,255,255,.07);border:1px solid var(--line);border-radius:3px;padding:0 5px;color:var(--text)}
+@media (max-width:760px){.rules{grid-template-columns:minmax(0,1fr)}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <a class="back" href="../../">← Back to the arcade</a>
+  <div class="title"><h1>FENCELINE</h1><p class="tag">Claim the field one fence at a time.</p></div>
+  <div class="screen">
+    <canvas id="c" aria-label="Fenceline field"></canvas>
+    <div class="pad"><div class="dpad"><button data-k="up" aria-label="Up">▲</button><button data-k="left" aria-label="Left">◀</button><button data-k="right" aria-label="Right">▶</button><button data-k="down" aria-label="Down">▼</button></div><div class="draws"><button class="f" data-k="fast">FAST</button><button class="s" data-k="slow">SLOW</button></div></div>
+  </div>
+  <div class="rules">
+    <div><h2>Fence it off</h2><p>Your marker runs along the white lines. Hold a draw button and steer into the open field to lay a fence. Reach a white line again and the side without the tangle is yours.</p></div>
+    <div><h2>Fast or slow</h2><p><span class="f">Fast fences</span> score 1 point per cell. <span class="s">Slow fences</span> move at half speed and score double. Stop moving mid-fence and a fuse burns along it toward you.</p></div>
+    <div><h2>Watch out</h2><p>If the roaming tangle touches your unfinished fence, you lose a life. Embers chase you along the white lines, and more join over time. Claim 75% to clear the field; every point over is a bonus.</p></div>
+  </div>
+  <p class="keys">Arrows or <kbd>WASD</kbd> to move. Hold <kbd>Space</kbd> for a fast fence, <kbd>Shift</kbd> or <kbd>X</kbd> for a slow one. Gamepad: d-pad or stick, A fast, B slow. <kbd>P</kbd> pause, <kbd>M</kbd> mute.</p>
+</div>
+<script src="../../assets/arcade.js"></script>
+<script>
+(()=>{
+'use strict';
+const W=680,H=560,GW=128,GH=96,CS=5,FX=20,FY=60;
+// cell values
+const OPEN=0,EDGE=1,FAST=2,SLOW=3,TRAIL=4;
+const cv=document.getElementById('c'),ctx=cv.getContext('2d');
+const DPR=Math.min(window.devicePixelRatio||1,2);cv.width=W*DPR;cv.height=H*DPR;ctx.setTransform(DPR,0,0,DPR,0,0);
+const rnd=(a,b)=>a+Math.random()*(b-a),pick=a=>a[Math.floor(Math.random()*a.length)],clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+
+/* audio */
+let AC=null,muted=false,hum=null;
+function ac(){if(!AC){try{AC=new (window.AudioContext||window.webkitAudioContext)()}catch(e){}}if(AC&&AC.state==='suspended')AC.resume();return AC}
+function tone(f,d,type='square',v=.05,f2=0,w=0){const a=ac();if(!a||muted)return;const t=a.currentTime+w,o=a.createOscillator(),g=a.createGain();o.type=type;o.frequency.setValueAtTime(f,t);if(f2)o.frequency.exponentialRampToValueAtTime(f2,t+d);g.gain.setValueAtTime(v,t);g.gain.exponentialRampToValueAtTime(.0008,t+d);o.connect(g).connect(a.destination);o.start(t);o.stop(t+d+.02)}
+let NB=null;function noise(d,f0,f1,v){const a=ac();if(!a||muted)return;if(!NB){NB=a.createBuffer(1,a.sampleRate,a.sampleRate);const c=NB.getChannelData(0);for(let i=0;i<c.length;i++)c[i]=Math.random()*2-1}const s=a.createBufferSource(),f=a.createBiquadFilter(),g=a.createGain(),t=a.currentTime;s.buffer=NB;s.loop=true;f.type='lowpass';f.frequency.setValueAtTime(f0,t);f.frequency.exponentialRampToValueAtTime(f1,t+d);g.gain.setValueAtTime(v,t);g.gain.exponentialRampToValueAtTime(.001,t+d);s.connect(f).connect(g).connect(a.destination);s.start();s.stop(t+d)}
+function drawHum(on,slow){const a=ac();if(!a)return;if(!hum){const o=a.createOscillator(),g=a.createGain();o.type='sawtooth';o.frequency.value=110;g.gain.value=0;o.connect(g).connect(a.destination);o.start();hum={o,g}}hum.o.frequency.setTargetAtTime(slow?82:130,a.currentTime,.05);hum.g.gain.setTargetAtTime(on&&!muted?.025:0,a.currentTime,.03)}
+const S={claim:pct=>[523,659,784,1047].forEach((f,i)=>tone(f*(1+pct/200),.12,'square',.05,0,i*.06)),die:()=>{noise(.9,3000,80,.6);[440,370,300,220].forEach((f,i)=>tone(f,.18,'square',.05,0,i*.14))},clear:()=>[523,659,784,1047,1319,1568].forEach((f,i)=>tone(f,.14,'square',.05,0,i*.1)),fuse:()=>tone(1800,.03,'square',.02),spawn:()=>tone(200,.3,'sawtooth',.05,600)};
+
+/* state */
+const grid=new Uint8Array(GW*GH),border=new Uint8Array(GW*GH),tex=new Float32Array(GW*GH);
+for(let i=0;i<tex.length;i++)tex[i]=Math.random();
+const idx=(x,y)=>y*GW+x,inb=(x,y)=>x>=0&&y>=0&&x<GW&&y<GH;
+let phase='attract',level=1,score=0,hi=0,lives=3,time=0,paused=false,phaseT=0,claimed=0,total=0,levelT=0,spawnT=0;
+try{hi=+localStorage.getItem('fenceline-hi')||0}catch(e){}
+const P={x:64,y:GH-1,drawing:false,slow:false,trail:[],moveAcc:0,still:0,fuse:-1,start:null,dir:null};
+let tangles=[],embers=[],pops=[],parts=[],dirty=true;
+const target=()=>Math.min(80,74+level);
+
+function resetField(){grid.fill(OPEN);for(let x=0;x<GW;x++){grid[idx(x,0)]=EDGE;grid[idx(x,GH-1)]=EDGE}for(let y=0;y<GH;y++){grid[idx(0,y)]=EDGE;grid[idx(GW-1,y)]=EDGE}total=(GW-2)*(GH-2);claimed=0;computeBorder();dirty=true}
+function computeBorder(){border.fill(0);for(let y=0;y<GH;y++)for(let x=0;x<GW;x++){const v=grid[idx(x,y)];if(v===OPEN||v===TRAIL)continue;let b=false;for(let dy=-1;dy<=1&&!b;dy++)for(let dx=-1;dx<=1;dx++){const nx=x+dx,ny=y+dy;if(inb(nx,ny)&&(grid[idx(nx,ny)]===OPEN||grid[idx(nx,ny)]===TRAIL)){b=true;break}}border[idx(x,y)]=b?1:0}}
+function newLevel(){resetField();Object.assign(P,{x:64,y:GH-1,drawing:false,trail:[],still:0,fuse:-1,start:null});
+  tangles=[];for(let i=0;i<(level>=3?2:1);i++)tangles.push(makeTangle());
+  embers=[makeEmber(64,0,-1),makeEmber(64,0,1)];levelT=0;spawnT=22;phase='ready';phaseT=1.6}
+function makeTangle(){return{x:rnd(30,98),y:rnd(25,70),vx:rnd(-1,1),vy:rnd(-1,1),a:rnd(0,7),va:rnd(-3,3),len:8,hist:[],sp:20+level*3,hue:rnd(0,360)}}
+function makeEmber(x,y,d){return{x,y,px:x-d,py:y,acc:0,sp:22+level*2,t:0}}
+function start(){level=1;score=0;lives=3;newLevel()}
+
+/* input */
+const keys={};let tdir=null,tFast=0,tSlow=0,padPrev=false;
+const KD={ArrowUp:[0,-1],KeyW:[0,-1],ArrowDown:[0,1],KeyS:[0,1],ArrowLeft:[-1,0],KeyA:[-1,0],ArrowRight:[1,0],KeyD:[1,0]};let order=[];
+addEventListener('keydown',e=>{ac();if(KD[e.code]||e.code==='Space'){e.preventDefault()}
+  if((e.code==='Enter'||e.code==='Space')&&(phase==='attract'||phase==='over')){coin();return}
+  if(KD[e.code]&&!keys[e.code]){order=order.filter(k=>k!==e.code);order.push(e.code)}keys[e.code]=true;
+  if(e.code==='KeyP'||e.code==='Escape'){if(phase!=='attract'&&phase!=='over')paused=!paused}if(e.code==='KeyM')muted=!muted});
+addEventListener('keyup',e=>{keys[e.code]=false;order=order.filter(k=>k!==e.code)});
+addEventListener('blur',()=>{for(const k in keys)keys[k]=false;order=[]});
+document.querySelectorAll('.pad button').forEach(b=>{const k=b.dataset.k;b.addEventListener('pointerdown',e=>{e.preventDefault();ac();b.classList.add('on');if(phase==='attract'||phase==='over'){coin();return}if(k==='fast')tFast=1;else if(k==='slow')tSlow=1;else tdir={up:[0,-1],down:[0,1],left:[-1,0],right:[1,0]}[k]});
+  const off=()=>{b.classList.remove('on');if(k==='fast')tFast=0;else if(k==='slow')tSlow=0;else tdir=null};['pointerup','pointercancel','pointerleave'].forEach(t=>b.addEventListener(t,off))});
+cv.addEventListener('pointerdown',()=>{ac();if(phase==='attract'||phase==='over')coin();else if(paused)paused=false});
+document.addEventListener('visibilitychange',()=>{if(document.hidden&&phase!=='attract'&&phase!=='over'){paused=true;drawHum(false)}});
+function coin(){const go=()=>start();if(window.Arcade)Arcade.insertCoin(go,{label:'Fenceline · 1 token = 1 game'});else go()}
+function readInput(){let d=order.length?KD[order[order.length-1]]:tdir;let fast=keys.Space||tFast,slow=keys.ShiftLeft||keys.ShiftRight||keys.KeyX||tSlow;
+  const g=navigator.getGamepads?navigator.getGamepads()[0]:null;if(g){const b=n=>!!(g.buttons[n]&&g.buttons[n].pressed),ax=g.axes[0]||0,ay=g.axes[1]||0;
+    if(b(12)||ay<-.5)d=[0,-1];else if(b(13)||ay>.5)d=[0,1];else if(b(14)||ax<-.5)d=[-1,0];else if(b(15)||ax>.5)d=[1,0];if(b(0))fast=true;if(b(1)||b(2))slow=true;const st=b(0)||b(9);if(st&&!padPrev&&(phase==='attract'||phase==='over'))coin();padPrev=st}
+  return{d,fast,slow}}
+
+/* player */
+function trailTouchOk(nx,ny){for(const [dx,dy] of[[1,0],[-1,0],[0,1],[0,-1]]){const x=nx+dx,y=ny+dy;if(x===P.x&&y===P.y)continue;if(inb(x,y)&&grid[idx(x,y)]===TRAIL)return false}return true}
+function stepPlayer(d,fast,slow){
+  const nx=P.x+d[0],ny=P.y+d[1];if(!inb(nx,ny))return false;const v=grid[idx(nx,ny)];
+  if(P.drawing){
+    if(v===OPEN&&trailTouchOk(nx,ny)){grid[idx(nx,ny)]=TRAIL;P.trail.push([nx,ny]);P.x=nx;P.y=ny;dirty=true;return true}
+    if(v!==OPEN&&v!==TRAIL&&border[idx(nx,ny)]){P.x=nx;P.y=ny;closeFence();return true}
+    return false}
+  if(v!==OPEN&&v!==TRAIL&&border[idx(nx,ny)]){P.x=nx;P.y=ny;return true}
+  if(v===OPEN&&(fast||slow)){P.drawing=true;P.slow=!!slow&&!fast;P.start=[P.x,P.y];P.trail=[[nx,ny]];grid[idx(nx,ny)]=TRAIL;P.x=nx;P.y=ny;dirty=true;return true}
+  return false}
+function closeFence(){
+  const mode=P.slow?SLOW:FAST;for(const [x,y] of P.trail)grid[idx(x,y)]=mode;
+  // flood from every tangle; open cells not reached are claimed
+  const seen=new Uint8Array(GW*GH),stack=[];for(const t of tangles){const x=clamp(Math.round(t.x),1,GW-2),y=clamp(Math.round(t.y),1,GH-2);if(grid[idx(x,y)]===OPEN){stack.push(idx(x,y));seen[idx(x,y)]=1}}
+  while(stack.length){const i=stack.pop(),x=i%GW,y=(i/GW)|0;for(const [dx,dy] of[[1,0],[-1,0],[0,1],[0,-1]]){const nx=x+dx,ny=y+dy;if(!inb(nx,ny))continue;const j=idx(nx,ny);if(!seen[j]&&grid[j]===OPEN){seen[j]=1;stack.push(j)}}}
+  let n=P.trail.length;for(let i=0;i<grid.length;i++)if(grid[i]===OPEN&&!seen[i]){grid[i]=mode;n++}
+  claimed+=n;const pts=n*(P.slow?2:1);score+=pts;const pct=claimed/total*100;
+  pops.push({x:FX+P.x*CS,y:FY+P.y*CS-12,t:1.3,text:'+'+pts});S.claim(pct);
+  P.drawing=false;P.trail=[];P.fuse=-1;P.still=0;computeBorder();dirty=true;relocate(P);for(const e of embers)relocate(e);
+  if(pct>=target()){const over=Math.floor(pct-target());const bonus=over*500;score+=bonus;phase='clear';phaseT=3;S.clear();pops.push({x:W/2,y:H/2+40,t:3,text:bonus?`BONUS ${bonus}`:''});drawHum(false)}
+}
+function relocate(o){if(border[idx(o.x,o.y)]&&grid[idx(o.x,o.y)]!==TRAIL)return;const q=[[o.x,o.y]],seen=new Set([o.y*GW+o.x]);while(q.length){const [x,y]=q.shift();if(border[idx(x,y)]){o.x=x;o.y=y;if('px' in o){o.px=x;o.py=y}return}for(const [dx,dy] of[[1,0],[-1,0],[0,1],[0,-1]]){const nx=x+dx,ny=y+dy,k=ny*GW+nx;if(inb(nx,ny)&&!seen.has(k)){seen.add(k);q.push([nx,ny])}}}}
+function die(){if(phase!=='play')return;phase='dead';phaseT=1.6;S.die();drawHum(false);for(let i=0;i<40;i++)parts.push({x:FX+P.x*CS,y:FY+P.y*CS,vx:rnd(-160,160),vy:rnd(-160,160),t:rnd(.4,1),c:pick(['#fff','#3fd8ff','#ff9a3c'])})}
+function afterDeath(){lives--;if(lives<=0){gameOver();return}
+  for(const [x,y] of P.trail)grid[idx(x,y)]=OPEN;if(P.start){P.x=P.start[0];P.y=P.start[1]}P.trail=[];P.drawing=false;P.fuse=-1;P.still=0;dirty=true;
+  // send embers to the far side
+  embers=embers.slice(0,2).map((e,i)=>makeEmber(P.y>GH/2?64:64,P.y>GH/2?0:GH-1,i?1:-1));phase='ready';phaseT=1}
+
+/* update */
+function update(dt){
+  time+=dt;for(const p of parts){p.x+=p.vx*dt;p.y+=p.vy*dt;p.t-=dt}parts=parts.filter(p=>p.t>0);for(const p of pops){p.t-=dt;p.y-=14*dt}pops=pops.filter(p=>p.t>0);
+  const inp=readInput();
+  if(paused||phase==='attract'||phase==='over'){drawHum(false);return}
+  phaseT-=dt;moveTangles(dt);
+  if(phase==='ready'){if(phaseT<=0)phase='play';return}
+  if(phase==='dead'){if(phaseT<=0)afterDeath();return}
+  if(phase==='clear'){if(phaseT<=0){level++;newLevel()}return}
+  levelT+=dt;
+  // player
+  const drawingSlow=P.drawing?P.slow:(inp.slow&&!inp.fast);const sp=P.drawing?(P.slow?18:36):40;let moved=false;
+  if(inp.d&&(!P.drawing||inp.fast||inp.slow)){P.moveAcc+=dt*sp;while(P.moveAcc>=1){P.moveAcc-=1;if(stepPlayer(inp.d,inp.fast,inp.slow))moved=true;else{P.moveAcc=0;break}if(phase!=='play')break}}else P.moveAcc=0;
+  drawHum(P.drawing&&moved,P.slow);
+  if(P.drawing){if(moved){P.still=0;P.fuse=-1}else{P.still+=dt;if(P.still>.35){if(P.fuse<0)P.fuse=0;P.fuse+=dt*24;if(Math.floor(P.fuse)%3===0)S.fuse();if(P.fuse>=P.trail.length)die()}}}
+  // embers
+  spawnT-=dt;if(spawnT<=0&&embers.length<5){embers.push(makeEmber(64,0,pick([-1,1])));S.spawn();spawnT=20}
+  for(const e of embers){e.acc+=dt*(e.sp+Math.min(12,levelT*.15));while(e.acc>=1){e.acc-=1;stepEmber(e)}
+    if(Math.abs(e.x-P.x)+Math.abs(e.y-P.y)<=1)die()}
+  // tangle vs fence
+  if(P.drawing)for(const t of tangles){const c=Math.cos(t.a),s=Math.sin(t.a);for(let k=-t.len;k<=t.len;k+=.5){const x=Math.round(t.x+c*k),y=Math.round(t.y+s*k);if(!inb(x,y))continue;if(grid[idx(x,y)]===TRAIL||(x===P.x&&y===P.y)){die();break}}}
+}
+function stepEmber(e){const opts=[];for(const [dx,dy] of[[1,0],[-1,0],[0,1],[0,-1]]){const x=e.x+dx,y=e.y+dy;if(!inb(x,y))continue;const v=grid[idx(x,y)];if(v===OPEN||v===TRAIL||!border[idx(x,y)])continue;if(x===e.px&&y===e.py)continue;opts.push([x,y])}
+  if(!opts.length){[e.x,e.px]=[e.px,e.x];[e.y,e.py]=[e.py,e.y];return}
+  let n;const fx=e.x-e.px,fy=e.y-e.py,fwd=opts.find(([x,y])=>x-e.x===fx&&y-e.y===fy);
+  if(opts.length>1&&Math.random()<.5){opts.sort((a,b)=>Math.abs(a[0]-P.x)+Math.abs(a[1]-P.y)-(Math.abs(b[0]-P.x)+Math.abs(b[1]-P.y)));n=opts[0]}else n=fwd||pick(opts);
+  e.px=e.x;e.py=e.y;e.x=n[0];e.y=n[1]}
+function openAt(x,y){const i=Math.round(x),j=Math.round(y);return inb(i,j)&&(grid[idx(i,j)]===OPEN||grid[idx(i,j)]===TRAIL)}
+function moveTangles(dt){for(const t of tangles){
+  if(Math.random()<dt*1.2){t.vx+=rnd(-1,1);t.vy+=rnd(-1,1)}const m=Math.hypot(t.vx,t.vy)||1;t.vx/=m;t.vy/=m;
+  const nx=t.x+t.vx*t.sp*dt,ny=t.y+t.vy*t.sp*dt;if(openAt(nx,t.y))t.x=nx;else t.vx*=-1;if(openAt(t.x,ny))t.y=ny;else t.vy*=-1;
+  if(!openAt(t.x,t.y)){// trapped by a claim: hop to any open cell
+    for(let tries=0;tries<400;tries++){const x=rnd(1,GW-1),y=rnd(1,GH-1);if(openAt(x,y)){t.x=x;t.y=y;break}}}
+  t.a+=t.va*dt;if(Math.random()<dt)t.va=rnd(-4,4);t.len+=(rnd(7,20)-t.len)*dt*.8;
+  // keep both ends inside open ground
+  let L=t.len;while(L>1&&(!openAt(t.x+Math.cos(t.a)*L,t.y+Math.sin(t.a)*L)||!openAt(t.x-Math.cos(t.a)*L,t.y-Math.sin(t.a)*L)))L-=.5;t.len=Math.max(1,L);
+  t.hist.unshift([t.x,t.y,t.a,t.len]);if(t.hist.length>14)t.hist.pop();t.hue=(t.hue+dt*60)%360}}
+function gameOver(){phase='over';drawHum(false);if(score>hi)hi=score;try{localStorage.setItem('fenceline-hi',String(hi))}catch(e){}window.Arcade&&Arcade.submitScore(score)}
+
+/* draw */
+const fieldCv=document.createElement('canvas');fieldCv.width=GW;fieldCv.height=GH;const fctx=fieldCv.getContext('2d');const img=fctx.createImageData(GW,GH);
+function paintField(){const d=img.data,lv=(level-1)%4;
+  const FAST_C=[[20,90,140],[30,110,90],[60,60,140],[20,100,110]][lv],SLOW_C=[[170,80,30],[160,50,70],[170,120,30],[150,60,30]][lv];
+  for(let y=0;y<GH;y++)for(let x=0;x<GW;x++){const i=idx(x,y),v=grid[i],o=i*4,n=tex[i];let r=8,g=12,b=20;
+    if(v===FAST||v===SLOW){const c=v===FAST?FAST_C:SLOW_C,w=.8+.35*Math.sin(x*.18+y*.11)*Math.cos(y*.07-x*.05)+n*.15;r=c[0]*w;g=c[1]*w;b=c[2]*w}
+    else if(v===OPEN){const s=((x+y)%8===0)?1.6:1;r=10*s;g=16*s;b=26*s}
+    if((v===EDGE||v===FAST||v===SLOW)&&border[i]){r=235;g=246;b=255}
+    if(v===TRAIL){if(P.slow){r=255;g=150;b=60}else{r=80;g=220;b=255}}
+    d[o]=r;d[o+1]=g;d[o+2]=b;d[o+3]=255}
+  fctx.putImageData(img,0,0);dirty=false}
+function text(s,x,y,size,col,align='center'){ctx.font=`700 ${size}px "Chakra Petch",system-ui,sans-serif`;ctx.textAlign=align;ctx.textBaseline='middle';ctx.shadowColor=col;ctx.shadowBlur=10;ctx.fillStyle=col;ctx.fillText(s,x,y);ctx.shadowBlur=0}
+function render(){
+  ctx.fillStyle='#070a10';ctx.fillRect(0,0,W,H);
+  if(dirty||P.drawing)paintField();
+  ctx.imageSmoothingEnabled=false;ctx.drawImage(fieldCv,FX,FY,GW*CS,GH*CS);
+  const cx=x=>FX+x*CS+CS/2,cy=y=>FY+y*CS+CS/2;
+  // fuse
+  if(P.drawing&&P.fuse>=0){const k=Math.min(P.trail.length-1,Math.floor(P.fuse)),[x,y]=P.trail[k];ctx.fillStyle=Math.floor(time*20)%2?'#fff':'#ff4a3a';ctx.beginPath();ctx.arc(cx(x),cy(y),4,0,7);ctx.fill()}
+  // tangles
+  ctx.lineCap='round';for(const t of tangles){t.hist.forEach(([x,y,a,l],i)=>{ctx.strokeStyle=`hsla(${(t.hue+i*18)%360},100%,65%,${1-i/t.hist.length})`;ctx.lineWidth=i===0?3:2;ctx.beginPath();ctx.moveTo(FX+(x-Math.cos(a)*l)*CS+CS/2,FY+(y-Math.sin(a)*l)*CS+CS/2);ctx.lineTo(FX+(x+Math.cos(a)*l)*CS+CS/2,FY+(y+Math.sin(a)*l)*CS+CS/2);ctx.stroke()})}
+  // embers
+  for(const e of embers){const x=cx(e.x),y=cy(e.y);ctx.save();ctx.translate(x,y);ctx.rotate(time*8);ctx.fillStyle='#ffdf6a';ctx.shadowColor='#ff7a3c';ctx.shadowBlur=12;ctx.beginPath();for(let i=0;i<8;i++){const r=i%2?3:8;ctx.lineTo(Math.cos(i*Math.PI/4)*r,Math.sin(i*Math.PI/4)*r)}ctx.closePath();ctx.fill();ctx.restore()}
+  // player
+  if(phase!=='attract'&&phase!=='dead'){const x=cx(P.x),y=cy(P.y),col=P.drawing?(P.slow?'#ff9a3c':'#3fd8ff'):'#ffffff';ctx.save();ctx.translate(x,y);ctx.rotate(Math.PI/4);ctx.fillStyle=col;ctx.shadowColor=col;ctx.shadowBlur=14;ctx.fillRect(-6,-6,12,12);ctx.fillStyle='#070a10';ctx.fillRect(-2.5,-2.5,5,5);ctx.restore()}
+  for(const p of parts){ctx.globalAlpha=Math.min(1,p.t*2);ctx.fillStyle=p.c;ctx.fillRect(p.x-2,p.y-2,4,4)}ctx.globalAlpha=1;
+  for(const p of pops)if(p.text)text(p.text,p.x,p.y,16,'#ffffff');
+  // HUD
+  const pct=total?claimed/total*100:0;
+  text(String(score).padStart(6,'0'),FX,30,24,'#eaf6ff','left');text('HI '+Math.max(hi,score),FX+150,30,14,'#8ea3bb','left');
+  const bx=W/2-60,bw=200;ctx.fillStyle='#1f2a3a';ctx.fillRect(bx,22,bw,14);ctx.fillStyle='#3fd8ff';ctx.fillRect(bx,22,bw*Math.min(1,pct/100),14);ctx.fillStyle='#ffdf6a';ctx.fillRect(bx+bw*target()/100-1,18,3,22);text(pct.toFixed(1)+'%',bx+bw+12,30,16,'#3fd8ff','left');text('/'+target()+'%',bx+bw+70,30,13,'#8ea3bb','left');
+  text('FIELD '+level,W-FX,30,16,'#ff9a3c','right');
+  for(let i=0;i<Math.min(6,lives-(phase==='dead'?0:1));i++){ctx.save();ctx.translate(FX+8+i*20,H-11);ctx.rotate(Math.PI/4);ctx.fillStyle='#fff';ctx.fillRect(-4,-4,8,8);ctx.restore()}
+  const sh=()=>{ctx.fillStyle='rgba(7,10,16,.7)';ctx.fillRect(0,0,W,H)};
+  if(phase==='ready')text('FIELD '+level,W/2,H/2,40,'#3fd8ff');
+  if(phase==='clear')text(`FIELD CLAIMED · ${pct.toFixed(1)}%`,W/2,H/2,32,'#ffdf6a');
+  if(phase==='attract'){sh();text('FENCELINE',W/2,H*.34,64,'#3fd8ff');text('Claim the field one fence at a time',W/2,H*.34+50,18,'#eaf6ff');if(Math.floor(time*2)%2===0)text('PRESS ENTER OR TAP · 1 TOKEN',W/2,H*.62,18,'#ff9a3c');text('HI '+hi,W/2,H*.7,14,'#8ea3bb')}
+  if(phase==='over'){sh();text('GAME OVER',W/2,H*.36,54,'#ff4a3a');text('SCORE '+score,W/2,H*.36+50,24,'#eaf6ff');text('FIELD '+level,W/2,H*.36+82,15,'#8ea3bb');if(Math.floor(time*2)%2===0)text('PRESS ENTER OR TAP · 1 TOKEN',W/2,H*.7,18,'#3fd8ff')}
+  if(paused){sh();text('PAUSED',W/2,H/2,48,'#eaf6ff')}
+}
+resetField();tangles=[makeTangle()];
+let last=performance.now();
+function frame(now){const dt=Math.max(0,Math.min(.033,(now-last)/1000));last=now;update(dt);render();requestAnimationFrame(frame)}
+requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>

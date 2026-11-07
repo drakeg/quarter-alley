@@ -27,6 +27,7 @@ The running roadmap for the arcade. Check items off as they ship. Every game is 
 - [x] **Bunker Line** – marching grid of glow drones, crumbling bunkers and a mystery comet barge
 - [x] **Soft Landing** – lunar lander with fuel, zoom-in near the surface and multiplier pads
 - [x] **Cube Hop** – hop a cube pyramid to change every top's color; bouncers, a spring chaser and escape discs
+- [x] **Fenceline** – claim territory by drawing fences, with a roaming tangle, border embers and fast/slow fences
 
 ### Up next
 - [ ] **Girder Gang** – climb girders and dodge rolling barrels to reach the top

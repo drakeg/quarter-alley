@@ -28,6 +28,7 @@ A static website of original retro-style browser games. No build step, no server
 | **Bunker Line** | Hold the moon base against a marching grid of glow drones from behind crumbling bunkers. |
 | **Soft Landing** | Lunar lander: feather thrust and fuel to touch down softly on multiplier pads. |
 | **Cube Hop** | Hop a pyramid of cubes to change every top to the target color, dodging bouncers and a spring chaser. |
+| **Fenceline** | Draw fences to claim 75% of the field while a roaming tangle and border embers hunt you. |
 
 ```
 quarter-alley/
@@ -57,7 +58,8 @@ quarter-alley/
     ├── brickwave/index.html
     ├── bunker-line/index.html
     ├── soft-landing/index.html
-    └── cube-hop/index.html
+    ├── cube-hop/index.html
+    └── fenceline/index.html
 ├── leaderboards/index.html           ← public high scores (needs accounts)
 ├── supabase/schema.sql               ← database for accounts, tokens and scores
 ├── docs/LOGIN.md                     ← how to switch on accounts
