@@ -1,0 +1,260 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Cube Hop</title>
+<meta name="description" content="Cube Hop: bounce down a pyramid of cubes and turn every top to the target color while dodging bouncing balls and a spring-coiled chaser. Lure it off the edge with a floating disc.">
+<link rel="icon" href="../../assets/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;700&display=swap">
+<style>
+/* Layout: square-ish stage with the cast list beside it. Single candy theme by design. */
+:root{
+  --bg:#120b26;
+  --line:#2e2353;
+  --text:#fff5fb;
+  --muted:#b8a8d8;
+  --pop:#ff7ac4;      /* accent */
+  --sun:#ffd23f;
+  --font:"Fredoka","Trebuchet MS",system-ui,sans-serif;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--text)}
+body{font-family:var(--font);font-size:15px;line-height:1.5;font-weight:500;background-image:radial-gradient(ellipse at 50% 0,rgba(255,122,196,.15),transparent 60%)}
+.wrap{max-width:1040px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:16px 32px;display:flex;flex-direction:column;gap:14px}
+.back{font-size:12px;color:var(--muted);text-decoration:none;letter-spacing:.12em;text-transform:uppercase}
+.back:hover,.back:focus-visible{color:var(--pop)}
+.layout{display:grid;grid-template-columns:minmax(0,520px) minmax(0,1fr);gap:28px;align-items:start}
+.screen{border-radius:16px;overflow:hidden;box-shadow:0 0 0 1px var(--line),0 20px 60px rgba(0,0,0,.55);min-width:0}
+canvas{display:block;width:100%;height:auto;aspect-ratio:600/640;touch-action:none;background:#000;max-width:100%}
+.pad{display:none;grid-template-columns:repeat(2,1fr);gap:8px;padding:8px;background:#1b1238}
+.pad button{height:58px;border-radius:12px;border:1px solid var(--line);background:#24184a;color:var(--text);font:700 22px var(--font);touch-action:none;user-select:none;-webkit-user-select:none}
+.pad button.on{background:var(--line);border-color:var(--pop)}
+@media (pointer:coarse){.pad{display:grid}}
+h1{font-weight:700;font-size:clamp(34px,6vw,52px);margin:0 0 8px;line-height:1;color:var(--sun);text-shadow:0 4px 0 #b0306a}
+.side p{margin:0 0 12px;color:var(--muted);max-width:50ch}
+.cast{list-style:none;padding:0;margin:0 0 14px;display:grid;gap:8px}
+.cast li{display:grid;grid-template-columns:22px 1fr;gap:10px;align-items:start;font-size:14px;color:var(--muted)}
+.dot{width:18px;height:18px;border-radius:50%;margin-top:2px}
+.cast b{color:var(--text)}
+.keys{font-size:13px;color:var(--muted)}
+kbd{font-family:ui-monospace,Menlo,monospace;font-size:11px;background:rgba(255,255,255,.08);border:1px solid var(--line);border-radius:3px;padding:0 5px;color:var(--text)}
+@media (max-width:860px){.layout{grid-template-columns:minmax(0,1fr)}.screen{max-width:520px;margin:0 auto;width:100%}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <a class="back" href="../../">← Back to the arcade</a>
+  <div class="layout">
+    <div class="screen">
+      <canvas id="c" aria-label="Cube Hop pyramid"></canvas>
+      <div class="pad"><button data-k="ul" aria-label="Hop up-left">↖</button><button data-k="ur" aria-label="Hop up-right">↗</button><button data-k="dl" aria-label="Hop down-left">↙</button><button data-k="dr" aria-label="Hop down-right">↘</button></div>
+    </div>
+    <div class="side">
+      <h1>CUBE HOP</h1>
+      <p>You're Pip, a springy fuzzball on a pyramid of 28 cubes. Hop onto a cube to change its top. Turn them all to the color shown in the corner to clear the round. Hop off the edge and you fall, unless a floating disc is waiting there to carry you back to the top.</p>
+      <ul class="cast">
+        <li><span class="dot" style="background:#ff4a5a"></span><span><b>Red bouncers</b> drop in and bounce down to the bottom. Don't get flattened.</span></li>
+        <li><span class="dot" style="background:#a06aff"></span><span><b>Purple egg</b> hatches into <b>Coil</b>, a spring that hops straight after you. Ride a disc at the right moment and Coil follows you off the edge: <b>500</b>.</span></li>
+        <li><span class="dot" style="background:#5af07a"></span><span><b>Green gem</b> freezes everything for a few seconds: <b>100</b>.</span></li>
+        <li><span class="dot" style="background:#3fc8ff"></span><span><b>Smudge</b> (from level 2) changes cubes back. Catch it: <b>300</b>.</span></li>
+      </ul>
+      <p class="keys">Arrow keys hop diagonally: <kbd>↑</kbd> up-right, <kbd>←</kbd> up-left, <kbd>↓</kbd> down-left, <kbd>→</kbd> down-right. Or use <kbd>Q</kbd> <kbd>E</kbd> <kbd>Z</kbd> <kbd>C</kbd> or <kbd>7</kbd> <kbd>9</kbd> <kbd>1</kbd> <kbd>3</kbd> on the number pad. Gamepad d-pad works the same. Level 2 needs two hops per cube; level 3 flips cubes back if you land on them again. <kbd>P</kbd> pause, <kbd>M</kbd> mute.</p>
+    </div>
+  </div>
+</div>
+<script src="../../assets/arcade.js"></script>
+<script>
+(()=>{
+'use strict';
+const W=600,H=640,N=7,CW=64,TOPY=128,CX=W/2,ROWDY=48,SIDE=32;
+const cv=document.getElementById('c'),ctx=cv.getContext('2d');
+const DPR=Math.min(window.devicePixelRatio||1,2);cv.width=W*DPR;cv.height=H*DPR;ctx.setTransform(DPR,0,0,DPR,0,0);
+const rnd=(a,b)=>a+Math.random()*(b-a),pick=a=>a[Math.floor(Math.random()*a.length)],clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+
+/* audio */
+let AC=null,muted=false;
+function ac(){if(!AC){try{AC=new (window.AudioContext||window.webkitAudioContext)()}catch(e){}}if(AC&&AC.state==='suspended')AC.resume();return AC}
+function tone(f,d,type='square',v=.05,f2=0,w=0){const a=ac();if(!a||muted)return;const t=a.currentTime+w,o=a.createOscillator(),g=a.createGain();o.type=type;o.frequency.setValueAtTime(f,t);if(f2)o.frequency.exponentialRampToValueAtTime(f2,t+d);g.gain.setValueAtTime(v,t);g.gain.exponentialRampToValueAtTime(.0008,t+d);o.connect(g).connect(a.destination);o.start(t);o.stop(t+d+.02)}
+const S={hop:()=>tone(420,.09,'square',.04,620),flip:()=>tone(880,.07,'triangle',.05,1200),boing:()=>tone(160,.12,'triangle',.06,90),coil:()=>tone(240,.1,'sawtooth',.03,180),fall:()=>tone(900,1.1,'sine',.06,120),grumble:()=>{for(let i=0;i<6;i++)tone(rnd(140,320),.07,'sawtooth',.06,0,i*.07)},disc:()=>[523,659,784,1047,1319,1568].forEach((f,i)=>tone(f,.12,'sine',.05,0,i*.1)),catch:()=>[1047,1319,1568].forEach((f,i)=>tone(f,.08,'square',.05,0,i*.06)),freeze:()=>[1568,1319,1047,1568].forEach((f,i)=>tone(f,.1,'sine',.05,0,i*.08)),clear:()=>[523,659,784,1047,784,1047,1319].forEach((f,i)=>tone(f,.13,'square',.05,0,i*.1)),coilFall:()=>tone(600,1.2,'sawtooth',.05,60),life:()=>[1047,1319,1568,2093].forEach((f,i)=>tone(f,.1,'square',.05,0,i*.07))};
+
+/* palettes: [start, mid, target, left side, right side] */
+const PAL=[['#3a6ff0','#ffd23f','#ffd23f','#7a4ad0','#4a2a90'],['#2fc8a0','#ff7ac4','#ff7ac4','#c8642a','#8a3a14'],['#e8e0ff','#3fc8ff','#ff4a5a','#3a8a5a','#1f5a3a'],['#ff9a3c','#7a4aff','#5af07a','#3a6ff0','#22409a'],['#5af07a','#ffffff','#3fc8ff','#c83a6a','#7a1f40'],['#ffd23f','#ff4a5a','#a06aff','#2fa0c8','#1a5a7a']];
+const DIRS={ul:[-1,-1],ur:[-1,0],dl:[1,0],dr:[1,1]};
+const valid=(r,c)=>r>=0&&r<N&&c>=0&&c<=r;
+const pos=(r,c)=>({x:CX+(c-r/2)*CW,y:TOPY+r*ROWDY});
+
+let phase='attract',round=1,score=0,hi=0,lives=4,nextLife=8000,time=0,paused=false,phaseT=0,freezeT=0,spawnT=0,cubes=[],discs=[],enemies=[],pops=[],bubble=null,flashT=0;
+try{hi=+localStorage.getItem('cube-hop-hi')||0}catch(e){}
+const P={r:0,c:0,fr:0,fc:0,t:1,state:'idle',face:'dr',fallT:0,disc:null};
+const level=()=>Math.floor((round-1)/4)+1,mode=()=>(level()-1)%3,pal=()=>PAL[(round-1)%PAL.length];
+const steps=()=>mode()===1?2:1;
+
+function newRound(){cubes=[];for(let r=0;r<N;r++){cubes.push([]);for(let c=0;c<=r;c++)cubes[r].push(0)}
+  discs=[];const rows=[2,3,4,5];const lr=pick(rows),rr=pick(rows.filter(x=>x!==lr));discs.push({side:'L',row:lr},{side:'R',row:rr});if(level()>=3)discs.push({side:pick(['L','R']),row:pick([1,6].filter(x=>true))});
+  enemies=[];resetPlayer(true);phase='ready';phaseT=1.6;spawnT=2.5;freezeT=0}
+function resetPlayer(top){if(top){P.r=0;P.c=0}Object.assign(P,{fr:P.r,fc:P.c,t:1,state:'idle',disc:null,fallT:0})}
+function start(){round=1;score=0;lives=4;nextLife=8000;newRound()}
+function addScore(n,x,y){score+=n;if(x!=null)pops.push({x,y,t:1.1,text:String(n)});if(score>=nextLife){lives++;nextLife+=14000;S.life()}}
+const target=()=>steps();
+function stepCube(r,c){const v=cubes[r][c],m=mode();
+  if(m===2){if(v===0){cubes[r][c]=1;addScore(25);S.flip()}else{cubes[r][c]=0}}
+  else if(v<target()){cubes[r][c]=v+1;addScore(25);S.flip()}}
+function cubeColor(v){const p=pal();if(v===0)return p[0];if(v>=target())return p[2];return p[1]}
+const done=()=>cubes.every(row=>row.every(v=>v>=target()));
+
+/* hopping */
+function hop(e,dir,dur){const [dr,dc]=DIRS[dir];e.fr=e.r;e.fc=e.c;e.r+=dr;e.c+=dc;e.t=0;e.dur=dur;e.state='hop';if(dir)e.face=dir}
+function entPos(e){const a=pos(e.fr,e.fc),b=pos(e.r,e.c),t=clamp(e.t,0,1);let x=a.x+(b.x-a.x)*t,y=a.y+(b.y-a.y)*t-Math.sin(t*Math.PI)*(b.y<a.y?40:26);
+  if(e.state==='fall'){y+=e.fallT*e.fallT*900;}if(e.state==='drop'){y-=(1-e.dropT)*240}return{x,y}}
+function discAt(r,c){return discs.find(d=>!d.used&&((d.side==='L'&&c===-1&&r===d.row)||(d.side==='R'&&c===r+1&&r===d.row)))}
+
+/* input */
+let want=null;const held={};
+const KEYS={ArrowUp:'ur',ArrowLeft:'ul',ArrowDown:'dl',ArrowRight:'dr',KeyE:'ur',KeyQ:'ul',KeyZ:'dl',KeyC:'dr',Numpad9:'ur',Numpad7:'ul',Numpad1:'dl',Numpad3:'dr',KeyW:'ur',KeyA:'ul',KeyS:'dl',KeyD:'dr'};
+addEventListener('keydown',e=>{ac();if(KEYS[e.code]){e.preventDefault();held[e.code]=1;want=KEYS[e.code]}
+  if((e.code==='Enter'||e.code==='Space')&&(phase==='attract'||phase==='over')){e.preventDefault();coin();return}
+  if(e.code==='KeyP'||e.code==='Escape'){if(phase!=='attract'&&phase!=='over')paused=!paused}if(e.code==='KeyM')muted=!muted});
+addEventListener('keyup',e=>{delete held[e.code]});
+document.querySelectorAll('.pad button').forEach(b=>{const k=b.dataset.k;b.addEventListener('pointerdown',e=>{e.preventDefault();ac();b.classList.add('on');if(phase==='attract'||phase==='over'){coin();return}want=k;held['t'+k]=1});
+  const off=()=>{b.classList.remove('on');delete held['t'+k]};['pointerup','pointercancel','pointerleave'].forEach(t=>b.addEventListener(t,off))});
+cv.addEventListener('pointerdown',e=>{ac();if(phase==='attract'||phase==='over'){coin();return}if(paused){paused=false;return}
+  // tap a quadrant around Pip to hop that way
+  const r=cv.getBoundingClientRect(),x=(e.clientX-r.left)/r.width*W,y=(e.clientY-r.top)/r.height*H,p=pos(P.r,P.c);want=(y<p.y?'u':'d')+(x<p.x?'l':'r')});
+document.addEventListener('visibilitychange',()=>{if(document.hidden&&phase!=='attract'&&phase!=='over')paused=true});
+function coin(){const go=()=>start();if(window.Arcade)Arcade.insertCoin(go,{label:'Cube Hop · 1 token = 1 game'});else go()}
+let padPrev={};
+function pollPad(){const g=navigator.getGamepads?navigator.getGamepads()[0]:null;if(!g)return;const b=n=>!!(g.buttons[n]&&g.buttons[n].pressed),ax=g.axes[0]||0,ay=g.axes[1]||0;
+  const u=b(12)||ay<-.5,d=b(13)||ay>.5,l=b(14)||ax<-.5,r=b(15)||ax>.5;let k=null;if(u&&r)k='ur';else if(u&&l)k='ul';else if(d&&l)k='dl';else if(d&&r)k='dr';else if(u)k='ur';else if(l)k='ul';else if(d)k='dl';else if(r)k='dr';
+  if(k&&k!==padPrev.k)want=k;padPrev.k=k;held.pad=k?1:0;if(k)held.padk=k;const st=b(0)||b(9);if(st&&!padPrev.st&&(phase==='attract'||phase==='over'))coin();padPrev.st=st}
+
+/* update */
+function update(dt){
+  time+=dt;pollPad();for(const p of pops){p.t-=dt;p.y-=22*dt}pops=pops.filter(p=>p.t>0);
+  if(paused||phase==='attract'||phase==='over')return;
+  phaseT-=dt;
+  if(phase==='ready'){if(phaseT<=0)phase='play';return}
+  if(phase==='clear'){flashT+=dt;if(phaseT<=0){round++;newRound()}return}
+  if(phase==='dead'){if(phaseT<=0){bubble=null;lives--;if(lives<=0){gameOver();return}enemies=[];resetPlayer(P.state==='fall'||P.r<0||!valid(P.r,P.c));phase='ready';phaseT=1}return}
+  const spd=1+Math.min(.6,(round-1)*.04);
+  // player
+  if(P.state==='idle'&&want){hop(P,want,.3/spd);S.hop();want=null}
+  else if(P.state==='hop'){P.t+=dt/P.dur;if(P.t>=1){P.t=1;landPlayer()}}
+  else if(P.state==='fall'){P.fallT+=dt;if(P.fallT>1.1){die('fall')}}
+  else if(P.state==='disc'){const d=P.disc;d.t+=dt/1.8;if(d.t>=1){P.r=0;P.c=0;P.fr=0;P.fc=0;P.state='drop';P.dropT=0;P.disc=null}}
+  else if(P.state==='drop'){P.dropT+=dt*3;if(P.dropT>=1){P.dropT=1;P.state='idle';P.t=1;stepCube(0,0);if(done())roundClear()}}
+  if(P.state==='idle'&&!want){for(const k in held){if(KEYS[k]){want=KEYS[k];break}if(k.startsWith('t')){want=k.slice(1);break}if(k==='pad'&&held.pad){want=held.padk;break}}}
+  // enemies
+  if(freezeT>0)freezeT-=dt;else{
+    spawnT-=dt;if(spawnT<=0){spawn();spawnT=rnd(2.6,4.2)/spd}
+    for(const e of enemies)updateEnemy(e,dt,spd)}
+  enemies=enemies.filter(e=>!e.gone);
+  // collisions
+  if(phase==='play'&&(P.state==='idle'||P.state==='hop')){const pp=entPos(P);for(const e of enemies){if(e.state==='fall'||e.state==='drop'&&e.dropT<.8||e.gone)continue;const ep=entPos(e);
+    if(Math.hypot(ep.x-pp.x,ep.y-pp.y)<24){if(e.type==='green'){e.gone=true;freezeT=3.5;addScore(100,ep.x,ep.y-30);S.freeze()}else if(e.type==='smudge'){e.gone=true;addScore(300,ep.x,ep.y-30);S.catch()}else if(freezeT<=0||e.type!=='coil'){die('hit');break}else{die('hit');break}}}}
+}
+function landPlayer(){
+  if(valid(P.r,P.c)){P.state='idle';stepCube(P.r,P.c);if(done())roundClear();return}
+  const d=discAt(P.r,P.c);
+  if(d){d.used=true;P.state='disc';P.disc={d,t:0,x0:pos(P.r,P.c).x,y0:pos(P.r,P.c).y};S.disc();
+    const coil=enemies.find(e=>e.type==='coil'&&e.state!=='fall'&&Math.abs(e.r-P.fr)<=2&&Math.abs(e.c-P.fc)<=2);if(coil)coil.lure={r:P.r,c:P.c,from:{r:P.fr,c:P.fc}};
+    for(const e of enemies)if(e.type!=='coil')e.gone=true;return}
+  P.state='fall';P.fallT=0;S.fall();
+}
+function die(why){if(phase!=='play')return;phase='dead';phaseT=1.8;const p=entPos(P);bubble={x:p.x,y:p.y-50};if(why!=='fall')S.grumble()}
+function roundClear(){phase='clear';phaseT=2.4;flashT=0;enemies=[];const bonus=1000+250*(round-1);addScore(bonus);const unused=discs.filter(d=>!d.used).length*50;addScore(unused);pops.push({x:W/2,y:H-70,t:2.2,text:'BONUS '+(bonus+unused)});S.clear()}
+function spawn(){
+  const lv=level(),has=t=>enemies.some(e=>e.type===t||(t==='purple'&&e.type==='coil'));
+  const pool=['red','red','red'];if(!has('purple'))pool.push('purple','purple');if(Math.random()<.25&&!has('green'))pool.push('green');if(lv>=2&&!has('smudge'))pool.push('smudge');
+  if(enemies.filter(e=>e.type==='red').length>=2+Math.floor(lv/2))pool.splice(0,3);if(!pool.length)return;
+  const type=pick(pool),c=Math.random()<.5?0:1;
+  enemies.push({type,r:1,c,fr:1,fc:c,t:1,state:'drop',dropT:0,wait:.4,face:'dr'})}
+function updateEnemy(e,dt,spd){
+  if(e.state==='drop'){e.dropT+=dt*2.2;if(e.dropT>=1){e.dropT=1;e.state='idle';e.wait=.35;S.boing()}return}
+  if(e.state==='fall'){e.fallT+=dt;if(e.fallT>1.2)e.gone=true;return}
+  if(e.state==='hop'){e.t+=dt/e.dur;if(e.t>=1){e.t=1;
+      if(!valid(e.r,e.c)){e.state='fall';e.fallT=0;if(e.type==='coil'){addScore(500,pos(e.r,e.c).x,pos(e.r,e.c).y-20);S.coilFall()}return}
+      e.state='idle';e.wait=e.type==='coil'?.32/spd:.42/spd;
+      if(e.type==='smudge'&&cubes[e.r][e.c]>0&&mode()!==2)cubes[e.r][e.c]--;else if(e.type==='smudge'&&mode()===2)cubes[e.r][e.c]=0;
+      if(e.type==='coil')S.coil();else S.boing()}return}
+  if(e.state==='hatch'){e.wait-=dt;if(e.wait<=0){e.type='coil';e.state='idle';e.wait=.2}return}
+  e.wait-=dt;if(e.wait>0)return;
+  if(e.type==='purple'&&e.r===N-1){e.state='hatch';e.wait=.9;return}
+  if(e.type==='coil'){
+    let tgt;if(e.lure){tgt=e.lure.from.r===e.r&&e.lure.from.c===e.c?pos(e.lure.r,e.lure.c):pos(e.lure.from.r,e.lure.from.c)}else if(P.state==='idle'||P.state==='hop'){tgt=pos(P.r,P.c)}else{e.wait=.3;return}
+    let best=null,bd=1e9;for(const k in DIRS){const [dr,dc]=DIRS[k],r=e.r+dr,c=e.c+dc;if(!valid(r,c)&&!(e.lure&&e.lure.r===r&&e.lure.c===c))continue;const p=pos(r,c),d=Math.hypot(p.x-tgt.x,p.y-tgt.y);if(d<bd){bd=d;best=k}}
+    if(best)hop(e,best,.4/spd);return}
+  const dir=Math.random()<.5?'dl':'dr';hop(e,dir,.45/spd);
+}
+function gameOver(){phase='over';if(score>hi)hi=score;try{localStorage.setItem('cube-hop-hi',String(hi))}catch(e){}window.Arcade&&Arcade.submitScore(score)}
+
+/* draw */
+function shade(c,f){const n=parseInt(c.slice(1),16);return`rgb(${Math.min(255,(n>>16&255)*f)|0},${Math.min(255,(n>>8&255)*f)|0},${Math.min(255,(n&255)*f)|0})`}
+function cube(x,y,top,left,right,small){const w=CW/2,h=CW/4,s=SIDE;
+  ctx.fillStyle=left;ctx.beginPath();ctx.moveTo(x-w,y);ctx.lineTo(x,y+h);ctx.lineTo(x,y+h+s);ctx.lineTo(x-w,y+s);ctx.closePath();ctx.fill();
+  ctx.fillStyle=right;ctx.beginPath();ctx.moveTo(x+w,y);ctx.lineTo(x,y+h);ctx.lineTo(x,y+h+s);ctx.lineTo(x+w,y+s);ctx.closePath();ctx.fill();
+  ctx.fillStyle=top;ctx.beginPath();ctx.moveTo(x,y-h);ctx.lineTo(x+w,y);ctx.lineTo(x,y+h);ctx.lineTo(x-w,y);ctx.closePath();ctx.fill();
+  ctx.fillStyle='rgba(255,255,255,.18)';ctx.beginPath();ctx.moveTo(x,y-h);ctx.lineTo(x+w,y);ctx.lineTo(x+w-6,y);ctx.lineTo(x,y-h+3);ctx.closePath();ctx.fill()}
+function drawPip(x,y,face,squash){ctx.save();ctx.translate(x,y);const left=face==='ul'||face==='dl',up=face==='ul'||face==='ur';ctx.scale(left?-1:1,1);
+  ctx.fillStyle='rgba(0,0,0,.25)';ctx.beginPath();ctx.ellipse(0,2,14,5,0,0,7);ctx.fill();
+  // feet
+  ctx.fillStyle='#4a2a90';ctx.beginPath();ctx.ellipse(-6,-1,7,4,0,0,7);ctx.ellipse(8,-1,7,4,0,0,7);ctx.fill();
+  // fuzzy body
+  ctx.fillStyle='#ff9a3c';ctx.beginPath();for(let i=0;i<14;i++){const a=i/14*Math.PI*2,r=15+(i%2)*2.5;ctx.lineTo(Math.cos(a)*r,-17+Math.sin(a)*r*(squash||1))}ctx.closePath();ctx.fill();
+  ctx.fillStyle='#ffc070';ctx.beginPath();ctx.arc(-4,-22,6,0,7);ctx.fill();
+  // antennae
+  ctx.strokeStyle='#ff9a3c';ctx.lineWidth=2.5;ctx.beginPath();ctx.moveTo(-4,-31);ctx.quadraticCurveTo(-8,-42,-2,-44);ctx.moveTo(4,-31);ctx.quadraticCurveTo(6,-42,12,-42);ctx.stroke();ctx.fillStyle='#ffd23f';ctx.beginPath();ctx.arc(-2,-44,3,0,7);ctx.arc(12,-42,3,0,7);ctx.fill();
+  if(!up){ctx.fillStyle='#fff';ctx.beginPath();ctx.ellipse(3,-19,4.5,5.5,0,0,7);ctx.ellipse(11,-19,4,5,0,0,7);ctx.fill();ctx.fillStyle='#1a1030';ctx.beginPath();ctx.arc(5,-18,2.2,0,7);ctx.arc(12.5,-18,2,0,7);ctx.fill();ctx.fillStyle='#ff4a7a';ctx.beginPath();ctx.ellipse(10,-11,3,2,0,0,7);ctx.fill()}
+  else{ctx.fillStyle='#e8822a';ctx.beginPath();ctx.arc(2,-14,5,0,7);ctx.fill()}
+  ctx.restore()}
+function drawEnemy(e){const p=entPos(e);let {x,y}=p;ctx.save();
+  if(e.state==='fall')ctx.globalAlpha=Math.max(0,1-e.fallT);
+  ctx.fillStyle='rgba(0,0,0,.25)';if(e.state!=='drop'&&e.state!=='fall'){ctx.beginPath();ctx.ellipse(x,y+2,11,4,0,0,7);ctx.fill()}
+  const frozen=freezeT>0;
+  if(e.type==='coil'){const sq=e.state==='idle'?1-Math.min(1,e.wait*3)*.2:1;ctx.translate(x,y);
+    for(let i=0;i<5;i++){ctx.strokeStyle=frozen?'#b8e8ff':i%2?'#7a3ad0':'#a06aff';ctx.lineWidth=5;ctx.beginPath();ctx.ellipse(0,-6-i*6*sq,10-i*.6,4,0,0,7);ctx.stroke()}
+    ctx.fillStyle=frozen?'#d8f2ff':'#a06aff';ctx.beginPath();ctx.arc(0,-38*sq,10,0,7);ctx.fill();ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(-4,-40*sq,4,0,7);ctx.arc(5,-40*sq,4,0,7);ctx.fill();ctx.fillStyle='#ff3a5a';ctx.beginPath();ctx.arc(-3,-40*sq,2,0,7);ctx.arc(6,-40*sq,2,0,7);ctx.fill();
+    ctx.strokeStyle='#ffd23f';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(-3,-49*sq);ctx.lineTo(-6,-55*sq);ctx.moveTo(3,-49*sq);ctx.lineTo(6,-55*sq);ctx.stroke()}
+  else if(e.type==='smudge'){ctx.translate(x,y);ctx.fillStyle=frozen?'#d8f2ff':'#3fc8ff';ctx.beginPath();ctx.ellipse(0,-12,10,12,0,0,7);ctx.fill();ctx.fillStyle='#1f6a9a';ctx.fillRect(-10,-14,20,4);ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(-3,-16,2.5,0,7);ctx.arc(4,-16,2.5,0,7);ctx.fill();ctx.fillStyle='#111';ctx.beginPath();ctx.arc(-3,-16,1.2,0,7);ctx.arc(4,-16,1.2,0,7);ctx.fill();ctx.strokeStyle='#1f6a9a';ctx.lineWidth=2;ctx.beginPath();ctx.arc(0,-8,4,.2,Math.PI-.2);ctx.stroke()}
+  else{const col={red:'#ff4a5a',purple:'#a06aff',green:'#5af07a'}[e.type];const hatch=e.state==='hatch'?Math.sin(time*40)*2:0;ctx.translate(x+hatch,y);const g=ctx.createRadialGradient(-4,-15,2,0,-10,12);g.addColorStop(0,'#fff');g.addColorStop(.3,frozen?'#d8f2ff':col);g.addColorStop(1,shade(frozen?'#8ab8d8':col,.5));ctx.fillStyle=g;ctx.beginPath();ctx.arc(0,-10,e.type==='green'?8:10,0,7);ctx.fill();
+    if(e.type==='green'){ctx.fillStyle='rgba(255,255,255,.8)';ctx.beginPath();ctx.moveTo(0,-20);ctx.lineTo(3,-10);ctx.lineTo(0,-2);ctx.lineTo(-3,-10);ctx.fill()}}
+  ctx.restore()}
+function text(s,x,y,size,col,align='center'){ctx.font=`700 ${size}px Fredoka,"Trebuchet MS",sans-serif`;ctx.textAlign=align;ctx.textBaseline='middle';ctx.lineJoin='round';ctx.lineWidth=Math.max(3,size/6);ctx.strokeStyle='#120b26';ctx.strokeText(s,x,y);ctx.fillStyle=col;ctx.fillText(s,x,y)}
+function render(){
+  let g=ctx.createLinearGradient(0,0,0,H);g.addColorStop(0,'#1a0f3a');g.addColorStop(1,'#3a1650');ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
+  ctx.fillStyle='rgba(255,255,255,.05)';for(let i=0;i<10;i++){ctx.beginPath();ctx.arc((i*97+time*6)%W,(i*61)%H,30+(i%3)*20,0,7);ctx.fill()}
+  const p=pal(),flash=phase==='clear'&&Math.floor(flashT*10)%2;
+  // discs behind
+  for(const d of discs){if(d.used&&!(P.disc&&P.disc.d===d))continue;let q=pos(d.row,d.side==='L'?-1:d.row+1);let x=q.x,y=q.y;
+    if(P.disc&&P.disc.d===d){const t=P.disc.t,tp=pos(0,0);x=q.x+(tp.x-q.x)*t;y=q.y+(tp.y-110-q.y)*t}
+    ctx.save();ctx.translate(x,y);const hue=(time*200)%360;ctx.fillStyle=`hsl(${hue},90%,65%)`;ctx.beginPath();ctx.ellipse(0,0,18,7,0,0,7);ctx.fill();ctx.fillStyle=`hsl(${(hue+120)%360},90%,70%)`;ctx.beginPath();ctx.ellipse(0,-1,10,4,0,0,7);ctx.fill();ctx.restore();
+    if(P.disc&&P.disc.d===d)drawPip(x,y-4,'dr')}
+  // pyramid
+  for(let r=0;r<N;r++)for(let c=0;c<=r;c++){const q=pos(r,c);cube(q.x,q.y,flash?(Math.random()<.5?p[1]:p[2]):cubeColor(cubes[r]?cubes[r][c]:0),p[3],p[4])}
+  // entities, sorted by depth
+  const ents=[];if(phase!=='attract'&&P.state!=='disc')ents.push({k:'p',y:entPos(P).y});for(const e of enemies)ents.push({k:e,y:entPos(e).y});ents.sort((a,b)=>a.y-b.y);
+  for(const en of ents){if(en.k==='p'){const q=entPos(P);if(P.state==='fall')ctx.globalAlpha=Math.max(0,1-P.fallT*.9);drawPip(q.x,q.y,P.face,P.state==='idle'?1:1.08);ctx.globalAlpha=1}else drawEnemy(en.k)}
+  if(bubble){ctx.fillStyle='#fff';ctx.beginPath();ctx.roundRect(bubble.x-44,bubble.y-28,88,34,12);ctx.fill();ctx.beginPath();ctx.moveTo(bubble.x-6,bubble.y+6);ctx.lineTo(bubble.x+4,bubble.y+16);ctx.lineTo(bubble.x+8,bubble.y+6);ctx.fill();ctx.font='700 17px Fredoka,sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillStyle='#d0306a';ctx.fillText('#?%&!',bubble.x,bubble.y-11)}
+  for(const q of pops)text(q.text,q.x,q.y,16,'#ffffff');
+  // HUD
+  text(String(score),18,26,26,'#ffd23f','left');text('HI '+Math.max(hi,score),18,52,13,'#b8a8d8','left');
+  text(`LEVEL ${level()}  ·  ROUND ${((round-1)%4)+1}`,W-18,26,16,'#ff7ac4','right');
+  text('CHANGE TO',W-60,56,12,'#b8a8d8','right');ctx.save();ctx.translate(W-34,52);ctx.scale(.42,.42);cube(0,0,p[2],p[3],p[4]);ctx.restore();
+  for(let i=0;i<Math.min(6,lives-1);i++){ctx.save();ctx.translate(24+i*26,H-18);ctx.scale(.55,.55);drawPip(0,0,'dr');ctx.restore()}
+  if(freezeT>0)text('FROZEN '+freezeT.toFixed(1),W/2,H-24,16,'#5af07a');
+  const sh=()=>{ctx.fillStyle='rgba(18,11,38,.66)';ctx.fillRect(0,0,W,H)};
+  if(phase==='ready')text(round===1||((round-1)%4===0)?`LEVEL ${level()}`:`ROUND ${((round-1)%4)+1}`,W/2,H-60,32,'#ffd23f');
+  if(phase==='attract'){sh();text('CUBE HOP',W/2,H*.3,72,'#ffd23f');text('Hop every cube to the target color',W/2,H*.3+54,18,'#fff5fb');drawPip(W/2,H*.56,'dr');if(Math.floor(time*2)%2===0)text('PRESS ENTER OR TAP · 1 TOKEN',W/2,H*.7,18,'#ff7ac4');text('HI '+hi,W/2,H*.78,14,'#b8a8d8')}
+  if(phase==='over'){sh();text('GAME OVER',W/2,H*.36,56,'#ff4a5a');text('SCORE '+score,W/2,H*.36+52,26,'#fff5fb');text(`LEVEL ${level()} · ROUND ${((round-1)%4)+1}`,W/2,H*.36+86,16,'#b8a8d8');if(Math.floor(time*2)%2===0)text('PRESS ENTER OR TAP · 1 TOKEN',W/2,H*.72,18,'#ff7ac4')}
+  if(paused){sh();text('PAUSED',W/2,H/2,48,'#fff5fb')}
+}
+newRound();phase='attract';
+let last=performance.now();
+function frame(now){const dt=Math.max(0,Math.min(.033,(now-last)/1000));last=now;update(dt);render();requestAnimationFrame(frame)}
+requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>

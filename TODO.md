@@ -26,6 +26,7 @@ The running roadmap for the arcade. Check items off as they ship. Every game is 
 - [x] **Brickwave** – paddle, ball and twelve walls of bricks with power-ups
 - [x] **Bunker Line** – marching grid of glow drones, crumbling bunkers and a mystery comet barge
 - [x] **Soft Landing** – lunar lander with fuel, zoom-in near the surface and multiplier pads
+- [x] **Cube Hop** – hop a cube pyramid to change every top's color; bouncers, a spring chaser and escape discs
 
 ### Up next
 - [ ] **Girder Gang** – climb girders and dodge rolling barrels to reach the top
@@ -38,7 +39,6 @@ The running roadmap for the arcade. Check items off as they ship. Every game is 
 - [ ] **Leapwise** – wake up in a stranger's life in a different decade; put one thing right before you leap again (time-hop adventure)
 
 ### Later
-- [ ] **Cube Hop** – hop a pyramid of cubes to change their colors
 - [ ] **Skyknights** – riders on flying mounts clash in the air, great for two players
 - [ ] **Lightline** – light-trail duels for 2–4 players
 - [ ] **Blast Block** – bomb-maze party game for up to 4 gamepads
