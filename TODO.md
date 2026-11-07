@@ -23,9 +23,9 @@ The running roadmap for the arcade. Check items off as they ship. Every game is 
 - [x] **Starting Blocks** – four-event track meet: sprint, hurdles, long jump, javelin
 - [x] **Burrow Bash** – dig through garden soil, pump pests until they pop, drop stones on them
 - [x] **Marsh Shot** – aim-and-fire marsh bird shoot with a laughing hound; 1 bird, 2 birds or clay discs
+- [x] **Brickwave** – paddle, ball and twelve walls of bricks with power-ups
 
 ### Up next
-- [ ] **Brickwave** – paddle, ball and bricks with power-ups
 - [ ] **Girder Gang** – climb girders and dodge rolling barrels to reach the top
 - [ ] **Flipside** – full pinball table with flippers, bumpers, ramps and multiball
 - [ ] **Roll Alley** – roll balls up an inclined lane into scoring rings and win prize tickets
