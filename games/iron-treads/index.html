@@ -442,7 +442,7 @@ document.addEventListener('visibilitychange',()=>{if(document.hidden&&phase==='p
 /* ---------- loop ---------- */
 loadMap(MAPS[0],true);
 let last=performance.now();
-function frame(now){const dt=Math.min(.05,(now-last)/1000);last=now;pollPad();let left=dt;while(left>0){const s=Math.min(left,1/90);update(s);left-=s}render();requestAnimationFrame(frame)}
+function frame(now){const dt=Math.max(0,Math.min(.05,(now-last)/1000));last=now;pollPad();let left=dt;while(left>0){const s=Math.min(left,1/90);update(s);left-=s}render();requestAnimationFrame(frame)}
 requestAnimationFrame(frame);
 window.__it={get phase(){return phase},get score(){return score},get lives(){return lives},get stage(){return stage},get enemies(){return reserve.length+spawns.length+tanks.filter(t=>t.kind==='enemy'&&t.alive).length},get p(){return players[0]&&{x:players[0].x,y:players[0].y,alive:players[0].alive}}};
 })();

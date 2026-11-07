@@ -444,7 +444,7 @@ document.addEventListener('visibilitychange',()=>{if(document.hidden&&phase==='p
 /* ---------- loop ---------- */
 newLevelGrid();resetActors();
 let last=performance.now();
-function frame(now){const dt=Math.min(.05,(now-last)/1000);last=now;pollPad();
+function frame(now){const dt=Math.max(0,Math.min(.05,(now-last)/1000));last=now;pollPad();
   let left=dt;while(left>0){const s=Math.min(left,1/120);update(s);left-=s}
   render(dt);requestAnimationFrame(frame)}
 requestAnimationFrame(frame);

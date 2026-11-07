@@ -291,7 +291,7 @@ function render(){
   if(paused){ctx.fillStyle='rgba(4,3,10,.6)';ctx.fillRect(0,0,W,H);text('PAUSED',W/2,H/2,34,'#f3eeff')}
 }
 let last=performance.now();
-function frame(now){const dt=Math.min(.04,(now-last)/1000);last=now;update(dt);render();requestAnimationFrame(frame)}
+function frame(now){const dt=Math.max(0,Math.min(.04,(now-last)/1000));last=now;update(dt);render();requestAnimationFrame(frame)}
 requestAnimationFrame(frame);
 })();
 </script>

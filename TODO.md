@@ -24,6 +24,7 @@ The running roadmap for the arcade. Check items off as they ship. Every game is 
 - [x] **Burrow Bash** – dig through garden soil, pump pests until they pop, drop stones on them
 - [x] **Marsh Shot** – aim-and-fire marsh bird shoot with a laughing hound; 1 bird, 2 birds or clay discs
 - [x] **Brickwave** – paddle, ball and twelve walls of bricks with power-ups
+- [x] **Bunker Line** – marching grid of glow drones, crumbling bunkers and a mystery comet barge
 
 ### Up next
 - [ ] **Girder Gang** – climb girders and dodge rolling barrels to reach the top

@@ -1,0 +1,213 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Bunker Line</title>
+<meta name="description" content="Bunker Line: hold the moon base against a marching grid of glow drones. Hide behind crumbling bunkers, pick off the ranks before they reach the ground, and tag the comet barge for bonus points.">
+<link rel="icon" href="../../assets/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=IBM+Plex+Sans:wght@400;600&display=swap">
+<style>
+/* Layout: a tall CRT-style screen with the score table beside it. Single night theme by design. */
+:root{
+  --bg:#05080d;
+  --line:#1b2a3a;
+  --text:#e8f4ff;
+  --muted:#8aa0b8;
+  --glow:#6cff9a;     /* accent */
+  --warn:#ff5a6a;
+  --display:"Press Start 2P",ui-monospace,monospace;
+  --body:"IBM Plex Sans","Segoe UI",system-ui,sans-serif;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--text)}
+body{font-family:var(--body);font-size:15px;line-height:1.55}
+.wrap{max-width:1000px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:16px 32px;display:flex;flex-direction:column;gap:14px}
+.back{font-size:12px;color:var(--muted);text-decoration:none;letter-spacing:.12em;text-transform:uppercase}
+.back:hover,.back:focus-visible{color:var(--glow)}
+.layout{display:grid;grid-template-columns:minmax(0,470px) minmax(0,1fr);gap:28px;align-items:start}
+.screen{position:relative;border-radius:14px;overflow:hidden;box-shadow:0 0 0 1px var(--line),0 0 50px rgba(108,255,154,.12),0 20px 60px rgba(0,0,0,.6);min-width:0}
+canvas{display:block;width:100%;height:auto;aspect-ratio:540/660;touch-action:none;background:#000;max-width:100%}
+.touch{display:none;justify-content:space-between;padding:8px;background:#0b121b;gap:8px}
+.touch button{flex:1;height:64px;border-radius:10px;border:1px solid var(--line);background:#111c28;color:var(--text);font:12px var(--display);touch-action:none;user-select:none;-webkit-user-select:none}
+.touch .fire{border-color:var(--glow);color:var(--glow);flex:1.4}
+.touch button.on{background:#1b2a3a}
+@media (pointer:coarse){.touch{display:flex}}
+h1{font-family:var(--display);font-weight:400;font-size:clamp(20px,3.6vw,30px);margin:0 0 14px;color:var(--glow);line-height:1.2;text-shadow:0 0 14px rgba(108,255,154,.5)}
+.side p{margin:0 0 12px;color:var(--muted);max-width:50ch}
+.table{display:grid;grid-template-columns:44px 1fr;gap:8px 12px;align-items:center;margin:0 0 16px;font:11px var(--display);color:var(--text)}
+.table canvas{width:36px;height:24px;aspect-ratio:auto;background:transparent;image-rendering:pixelated}
+.keys{font-size:13px;color:var(--muted)}
+kbd{font-family:ui-monospace,Menlo,monospace;font-size:11px;background:rgba(255,255,255,.07);border:1px solid var(--line);border-radius:3px;padding:0 5px;color:var(--text)}
+@media (max-width:820px){.layout{grid-template-columns:minmax(0,1fr)}.screen{max-width:470px;margin:0 auto;width:100%}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <a class="back" href="../../">← Back to the arcade</a>
+  <div class="layout">
+    <div class="screen">
+      <canvas id="c" aria-label="Bunker Line"></canvas>
+      <div class="touch"><button data-k="L" aria-label="Move left">◀</button><button class="fire" data-k="F" aria-label="Fire">FIRE</button><button data-k="R" aria-label="Move right">▶</button></div>
+    </div>
+    <div class="side">
+      <h1>BUNKER LINE</h1>
+      <p>Glow drones are marching on the moon base in tight ranks. They step sideways, drop a row at every edge, and speed up as their numbers shrink. Your cannon fires one bolt at a time, so make it count. The four bunkers soak up fire from both sides until they crumble away.</p>
+      <div class="table" id="table"></div>
+      <p class="keys"><kbd>←</kbd> <kbd>→</kbd> or <kbd>A</kbd> <kbd>D</kbd> to move, <kbd>Space</kbd> to fire. Gamepad works. On phones, use the buttons under the screen. <kbd>P</kbd> pause, <kbd>M</kbd> mute. Extra cannon at 1,500. If the drones reach the ground, the base falls.</p>
+    </div>
+  </div>
+</div>
+<script src="../../assets/arcade.js"></script>
+<script>
+(()=>{
+'use strict';
+const W=540,H=660,GROUNDY=616,PY=588,COLS=11,ROWS=5,CW=40,RH=34;
+const cv=document.getElementById('c'),ctx=cv.getContext('2d');
+const DPR=Math.min(window.devicePixelRatio||1,2);cv.width=W*DPR;cv.height=H*DPR;ctx.setTransform(DPR,0,0,DPR,0,0);ctx.imageSmoothingEnabled=false;
+const rnd=(a,b)=>a+Math.random()*(b-a),clamp=(v,a,b)=>Math.max(a,Math.min(b,v)),pick=a=>a[Math.floor(Math.random()*a.length)];
+
+/* audio */
+let AC=null,muted=false;
+function ac(){if(!AC){try{AC=new (window.AudioContext||window.webkitAudioContext)()}catch(e){}}if(AC&&AC.state==='suspended')AC.resume();return AC}
+function tone(f,d,type='square',v=.05,f2=0,w=0){const a=ac();if(!a||muted)return;const t=a.currentTime+w,o=a.createOscillator(),g=a.createGain();o.type=type;o.frequency.setValueAtTime(f,t);if(f2)o.frequency.exponentialRampToValueAtTime(f2,t+d);g.gain.setValueAtTime(v,t);g.gain.exponentialRampToValueAtTime(.0008,t+d);o.connect(g).connect(a.destination);o.start(t);o.stop(t+d+.02)}
+let NB=null;function noise(d,f0,f1,v){const a=ac();if(!a||muted)return;if(!NB){NB=a.createBuffer(1,a.sampleRate,a.sampleRate);const c=NB.getChannelData(0);for(let i=0;i<c.length;i++)c[i]=Math.random()*2-1}const s=a.createBufferSource(),f=a.createBiquadFilter(),g=a.createGain(),t=a.currentTime;s.buffer=NB;s.loop=true;f.type='lowpass';f.frequency.setValueAtTime(f0,t);f.frequency.exponentialRampToValueAtTime(f1,t+d);g.gain.setValueAtTime(v,t);g.gain.exponentialRampToValueAtTime(.001,t+d);s.connect(f).connect(g).connect(a.destination);s.start();s.stop(t+d)}
+const MARCH=[98,87,78,73];let marchI=0;
+let ufoOsc=null;
+const S={march:()=>tone(MARCH[marchI++%4],.09,'triangle',.14),shoot:()=>tone(1200,.12,'square',.04,300),boom:()=>{noise(.25,3000,200,.3);tone(300,.15,'square',.04,80)},hit:()=>{noise(.8,1200,60,.5);tone(120,.6,'sawtooth',.08,40)},ufo:on=>{const a=ac();if(!a)return;if(on&&!ufoOsc&&!muted){const o=a.createOscillator(),l=a.createOscillator(),lg=a.createGain(),g=a.createGain();o.type='square';o.frequency.value=600;l.frequency.value=7;lg.gain.value=180;l.connect(lg).connect(o.frequency);g.gain.value=.025;o.connect(g).connect(a.destination);o.start();l.start();ufoOsc={o,l}}if(!on&&ufoOsc){ufoOsc.o.stop();ufoOsc.l.stop();ufoOsc=null}},ufoHit:()=>[1400,1100,1400,1100,1600].forEach((f,i)=>tone(f,.08,'square',.05,0,i*.07)),life:()=>[1047,1319,1568,2093].forEach((f,i)=>tone(f,.1,'square',.05,0,i*.07)),wave:()=>[392,523,659,784].forEach((f,i)=>tone(f,.14,'square',.05,0,i*.11))};
+
+/* original drone sprites: 12x8, two frames each */
+const SPR={
+  eye:[['.....##.....','....####....','...##..##...','..##.##.##..','..##.##.##..','...##..##...','..#.####.#..','.#........#.'],['.....##.....','....####....','...######...','..##.##.##..','..##.##.##..','...##..##...','..#.####.#..','..#......#..']],
+  cap:[['...######...','.##########.','###.####.###','############','....#..#....','...#....#...','..#......#..','............'],['...######...','.##########.','###.####.###','############','....#..#....','....#..#....','...#....#...','............']],
+  pod:[['............','....####....','..########..','.#.##.##.#..','############','.##.#..#.##.','#..........#','............'],['............','....####....','..########..','..#.##.##.#.','############','.##.#..#.##.','.#........#.','............']],
+  barge:[['.....######.....','...##########...','..############..','.##.##.##.##.##.','################','..###..##..###..','...#........#...']]
+};
+const TYPES=[{spr:'eye',pts:30,col:'#ff6ad5'},{spr:'cap',pts:20,col:'#6cd8ff'},{spr:'cap',pts:20,col:'#6cd8ff'},{spr:'pod',pts:10,col:'#6cff9a'},{spr:'pod',pts:10,col:'#6cff9a'}];
+function sprCanvas(rows,col,scale){const c=document.createElement('canvas');c.width=rows[0].length*scale;c.height=rows.length*scale;const g=c.getContext('2d');g.fillStyle=col;rows.forEach((r,y)=>[...r].forEach((ch,x)=>{if(ch==='#')g.fillRect(x*scale,y*scale,scale,scale)}));return c}
+const CACHE={};function spr(name,f,col){const k=name+f+col;return CACHE[k]||(CACHE[k]=sprCanvas(SPR[name][f],col,3*DPR))}
+// fill the side table
+(()=>{const t=document.getElementById('table');const rows=[['eye','#ff6ad5','= 30'],['cap','#6cd8ff','= 20'],['pod','#6cff9a','= 10'],['barge','#ffcf4a','= ???']];
+  for(const [n,c,txt] of rows){const k=document.createElement('canvas');const sc=sprCanvas(SPR[n][0],c,3);k.width=sc.width;k.height=sc.height;k.getContext('2d').drawImage(sc,0,0);t.append(k);const s=document.createElement('span');s.textContent=txt;t.append(s)}})();
+
+/* state */
+let phase='attract',wave=1,score=0,hi=0,lives=3,extra=true,time=0,paused=false,stepT=0,stepDir=1,dropNext=false,frameF=0,pausedFor=0,msgT=0;
+try{hi=+localStorage.getItem('bunker-line-hi')||0}catch(e){}
+let drones=[],bolt=null,bombs=[],bunkers=[],booms=[],barge=null,bargeT=20,pops=[],stars=[];
+const P={x:W/2,alive:true,deadT:0};
+for(let i=0;i<90;i++)stars.push({x:rnd(0,W),y:rnd(0,GROUNDY-40),s:rnd(.5,1.6),tw:rnd(0,6)});
+
+function makeBunkers(){bunkers=[];const bw=66,bh=46,cell=3,cols=bw/cell|0,rows=bh/cell|0;
+  for(let i=0;i<4;i++){const x=Math.round(W/8+i*W/4-bw/2),y=PY-80,m=new Uint8Array(cols*rows);
+    for(let r=0;r<rows;r++)for(let c=0;c<cols;c++){const cx=c-cols/2+.5;let on=true;if(r<4&&Math.abs(cx)>cols/2-(4-r)*1.3)on=false;if(r>rows-6&&Math.abs(cx)<5)on=false;if(r>rows-9&&Math.abs(cx)<5-(rows-6-r)*.0&&r>rows-9&&Math.abs(cx)<(r-(rows-9))*1.6)on=false;m[r*cols+c]=on?1:0}
+    const k=document.createElement('canvas');k.width=bw*DPR;k.height=bh*DPR;const b={x,y,w:bw,h:bh,cell,cols,rows,m,cv:k};paintBunker(b);bunkers.push(b)}}
+function paintBunker(b){const g=b.cv.getContext('2d');g.setTransform(DPR,0,0,DPR,0,0);g.clearRect(0,0,b.w,b.h);for(let r=0;r<b.rows;r++)for(let c=0;c<b.cols;c++)if(b.m[r*b.cols+c]){g.fillStyle=(r+c)%7===0?'#3fd07a':'#6cff9a';g.fillRect(c*b.cell,r*b.cell,b.cell,b.cell)}}
+function bunkerHit(x,y,rad,fromAbove){for(const b of bunkers){if(x<b.x-rad||x>b.x+b.w+rad||y<b.y-rad||y>b.y+b.h+rad)continue;const c=Math.floor((x-b.x)/b.cell),r=Math.floor((y-b.y)/b.cell);
+  if(c>=0&&c<b.cols&&r>=0&&r<b.rows&&b.m[r*b.cols+c]){const R=Math.ceil(rad/b.cell);for(let dr=-R;dr<=R;dr++)for(let dc=-R;dc<=R;dc++){if(dr*dr+dc*dc>R*R+1||Math.random()<.3)continue;const rr=r+dr,cc=c+dc;if(rr>=0&&rr<b.rows&&cc>=0&&cc<b.cols)b.m[rr*b.cols+cc]=0}paintBunker(b);return true}}return false}
+function newWave(){drones=[];const top=120+Math.min(5,(wave-1))*RH*.5;
+  for(let r=0;r<ROWS;r++)for(let c=0;c<COLS;c++)drones.push({r,c,x:46+c*CW,y:top+r*RH,t:TYPES[r],alive:true});
+  bombs=[];bolt=null;barge=null;bargeT=rnd(16,26);stepDir=1;stepT=0;if(wave===1||wave%3===1)makeBunkers();phase='ready';msgT=1.6;S.wave()}
+function start(){wave=1;score=0;lives=3;extra=true;P.x=W/2;P.alive=true;makeBunkers();newWave()}
+function addScore(n){score+=n;if(extra&&score>=1500){extra=false;lives++;S.life()}}
+
+/* input */
+const keys={};let fireEdge=false,touchL=0,touchR=0,touchF=0,padPrev=false;
+addEventListener('keydown',e=>{ac();keys[e.code]=true;if(['ArrowLeft','ArrowRight','Space','ArrowUp'].includes(e.code))e.preventDefault();
+  if((e.code==='Enter'||e.code==='Space')&&(phase==='attract'||phase==='over')){coin();return}
+  if((e.code==='Space'||e.code==='ArrowUp'||e.code==='KeyW')&&!e.repeat)fireEdge=true;
+  if(e.code==='KeyP'||e.code==='Escape'){if(phase!=='attract'&&phase!=='over')paused=!paused}if(e.code==='KeyM'){muted=!muted;S.ufo(false)}});
+addEventListener('keyup',e=>{keys[e.code]=false});
+document.querySelectorAll('.touch button').forEach(b=>{const k=b.dataset.k;b.addEventListener('pointerdown',e=>{e.preventDefault();ac();b.classList.add('on');if(phase==='attract'||phase==='over'){coin();return}if(k==='L')touchL=1;if(k==='R')touchR=1;if(k==='F'){touchF=1;fireEdge=true}});
+  const off=()=>{b.classList.remove('on');if(k==='L')touchL=0;if(k==='R')touchR=0;if(k==='F')touchF=0};['pointerup','pointercancel','pointerleave'].forEach(t=>b.addEventListener(t,off))});
+cv.addEventListener('pointerdown',()=>{ac();if(phase==='attract'||phase==='over')coin();else if(paused)paused=false});
+document.addEventListener('visibilitychange',()=>{if(document.hidden&&phase!=='attract'&&phase!=='over'){paused=true;S.ufo(false)}});
+function coin(){const go=()=>start();if(window.Arcade)Arcade.insertCoin(go,{label:'Bunker Line · 1 token = 1 game'});else go()}
+
+/* update */
+function update(dt){
+  time+=dt;for(const b of booms)b.t-=dt;booms=booms.filter(b=>b.t>0);for(const p of pops){p.t-=dt}pops=pops.filter(p=>p.t>0);
+  let dir=0;if(keys.ArrowLeft||keys.KeyA||touchL)dir--;if(keys.ArrowRight||keys.KeyD||touchR)dir++;
+  const g=navigator.getGamepads?navigator.getGamepads()[0]:null;if(g){const ax=g.axes[0]||0;if(Math.abs(ax)>.25)dir+=Math.sign(ax);if(g.buttons[14]&&g.buttons[14].pressed)dir--;if(g.buttons[15]&&g.buttons[15].pressed)dir++;const f=g.buttons[0]&&g.buttons[0].pressed;if(f&&!padPrev){if(phase==='attract'||phase==='over')coin();else fireEdge=true}padPrev=f}
+  if(paused||phase==='attract'||phase==='over'){fireEdge=false;S.ufo(false);return}
+  if(phase==='ready'){msgT-=dt;if(msgT<=0)phase='play';fireEdge=false;return}
+  if(phase==='cleared'){msgT-=dt;if(msgT<=0){wave++;newWave()}fireEdge=false;return}
+  // player
+  if(P.alive){P.x=clamp(P.x+clamp(dir,-1,1)*230*dt,26,W-26);if((fireEdge||(touchF&&!bolt))&&!bolt){bolt={x:P.x,y:PY-16};S.shoot()}}
+  else{P.deadT-=dt;if(P.deadT<=0){if(lives<=0){gameOver();return}P.alive=true;P.x=W/2;bombs=[]}}
+  fireEdge=false;
+  // bolt
+  if(bolt){bolt.y-=760*dt;let gone=bolt.y<70;
+    if(!gone)for(const d of drones){if(d.alive&&bolt.x>d.x-17&&bolt.x<d.x+17&&bolt.y>d.y-12&&bolt.y<d.y+12){d.alive=false;addScore(d.t.pts);booms.push({x:d.x,y:d.y,t:.25,col:d.t.col});S.boom();gone=true;break}}
+    if(!gone&&barge&&!barge.dead&&Math.abs(bolt.x-barge.x)<26&&Math.abs(bolt.y-barge.y)<12){const pts=pick([50,100,100,150,150,300]);addScore(pts);barge.dead=true;pops.push({x:barge.x,y:barge.y,t:1.4,text:String(pts)});S.ufo(false);S.ufoHit();gone=true}
+    if(!gone&&bunkerHit(bolt.x,bolt.y,5,false))gone=true;
+    if(!gone)for(const b of bombs){if(Math.abs(b.x-bolt.x)<5&&Math.abs(b.y-bolt.y)<12){b.dead=true;booms.push({x:b.x,y:b.y,t:.15,col:'#fff'});gone=true;break}}
+    if(gone)bolt=null}
+  // march
+  const live=drones.filter(d=>d.alive);
+  if(!live.length){phase='cleared';msgT=2;bolt=null;bombs=[];S.ufo(false);addScore(0);return}
+  const interval=Math.max(.035,.018+live.length*.0105)/(1+(wave-1)*.06);
+  stepT-=dt;if(stepT<=0&&P.alive){stepT=interval;frameF^=1;S.march();
+    if(dropNext){for(const d of live)d.y+=16;stepDir*=-1;dropNext=false}
+    else{for(const d of live)d.x+=stepDir*7;const minX=Math.min(...live.map(d=>d.x)),maxX=Math.max(...live.map(d=>d.x));if(maxX>W-24||minX<24)dropNext=true}
+    for(const d of live)if(d.y+12>bunkers[0]?.y)bunkerHit(d.x,d.y+8,18,true);
+    if(Math.max(...live.map(d=>d.y))>PY-14){lives=0;killPlayer();return}}
+  // bombs
+  const maxB=Math.min(5,2+Math.floor(wave/2));
+  if(P.alive&&bombs.length<maxB&&Math.random()<dt*(1.4+wave*.25)){
+    const cols={};for(const d of live){if(!cols[d.c]||d.y>cols[d.c].y)cols[d.c]=d}const shooters=Object.values(cols);
+    let s=Math.random()<.45?shooters.reduce((a,b)=>Math.abs(b.x-P.x)<Math.abs(a.x-P.x)?b:a):pick(shooters);if(s)bombs.push({x:s.x,y:s.y+12,kind:Math.floor(Math.random()*3),sp:rnd(190,250)+wave*8})}
+  for(const b of bombs){b.y+=b.sp*dt;if(b.y>GROUNDY-4){b.dead=true;booms.push({x:b.x,y:GROUNDY-4,t:.15,col:'#ff5a6a'})}
+    else if(bunkerHit(b.x,b.y+6,6,true))b.dead=true;
+    else if(P.alive&&Math.abs(b.x-P.x)<20&&b.y>PY-12&&b.y<PY+14){b.dead=true;killPlayer()}}
+  bombs=bombs.filter(b=>!b.dead);
+  // barge
+  bargeT-=dt;if(!barge&&bargeT<=0&&live.length>6&&P.alive){const dir=Math.random()<.5?1:-1;barge={x:dir>0?-30:W+30,y:92,dir};S.ufo(true)}
+  if(barge){if(!barge.dead)barge.x+=barge.dir*110*dt;if(barge.dead||barge.x<-40||barge.x>W+40){if(!barge.dead)S.ufo(false);barge=null;bargeT=rnd(18,28)}}
+}
+function killPlayer(){if(!P.alive)return;P.alive=false;P.deadT=1.6;lives--;S.hit();bolt=null;S.ufo(false);booms.push({x:P.x,y:PY,t:1.4,col:'#ff5a6a',big:true})}
+function gameOver(){phase='over';S.ufo(false);if(score>hi)hi=score;try{localStorage.setItem('bunker-line-hi',String(hi))}catch(e){}window.Arcade&&Arcade.submitScore(score)}
+
+/* draw */
+function text(s,x,y,size,col,align='center'){ctx.font=`${size}px "Press Start 2P",ui-monospace,monospace`;ctx.textAlign=align;ctx.textBaseline='middle';ctx.shadowColor=col;ctx.shadowBlur=8;ctx.fillStyle=col;ctx.fillText(s,x,y);ctx.shadowBlur=0}
+function drawCannon(x,y,col='#6cff9a'){ctx.save();ctx.translate(x,y);ctx.shadowColor=col;ctx.shadowBlur=10;ctx.fillStyle=col;ctx.beginPath();ctx.roundRect(-20,0,40,12,3);ctx.fill();ctx.beginPath();ctx.roundRect(-13,-6,26,8,3);ctx.fill();ctx.fillRect(-3,-16,6,12);ctx.shadowBlur=0;ctx.fillStyle='#05080d';ctx.fillRect(-14,5,28,2);ctx.restore()}
+function render(){
+  const g=ctx.createLinearGradient(0,0,0,H);g.addColorStop(0,'#03050a');g.addColorStop(.7,'#08101e');g.addColorStop(1,'#0e1a2a');ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
+  for(const s of stars){ctx.globalAlpha=.4+.4*Math.sin(time*2+s.tw);ctx.fillStyle='#cfe6ff';ctx.fillRect(s.x,s.y,s.s,s.s)}ctx.globalAlpha=1;
+  // planet on the horizon
+  ctx.fillStyle='rgba(255,106,213,.08)';ctx.beginPath();ctx.arc(W*.78,GROUNDY+380,440,0,7);ctx.fill();
+  // ground
+  ctx.fillStyle='#1a2636';ctx.fillRect(0,GROUNDY,W,H-GROUNDY);ctx.fillStyle='#6cff9a';ctx.fillRect(0,GROUNDY,W,2);
+  for(let i=0;i<8;i++){ctx.fillStyle='#223247';ctx.beginPath();ctx.ellipse((i*83+20)%W,GROUNDY+20+(i%3)*8,14+(i%4)*4,3,0,0,7);ctx.fill()}
+  for(const b of bunkers)ctx.drawImage(b.cv,b.x,b.y,b.w,b.h);
+  for(const d of drones){if(!d.alive)continue;const s=spr(d.t.spr,frameF,d.t.col);ctx.shadowColor=d.t.col;ctx.shadowBlur=8;ctx.drawImage(s,d.x-18,d.y-12,36,24);ctx.shadowBlur=0}
+  if(barge&&!barge.dead){const s=spr('barge',0,'#ffcf4a');ctx.shadowColor='#ffcf4a';ctx.shadowBlur=12;ctx.drawImage(s,barge.x-24,barge.y-10,48,21);ctx.shadowBlur=0;ctx.fillStyle=Math.floor(time*8)%2?'#ff5a6a':'#ffffff';ctx.fillRect(barge.x-3,barge.y-3,6,3)}
+  if(bolt){ctx.fillStyle='#ffffff';ctx.shadowColor='#6cff9a';ctx.shadowBlur=10;ctx.fillRect(bolt.x-1.5,bolt.y-10,3,14);ctx.shadowBlur=0}
+  for(const b of bombs){ctx.strokeStyle=['#ff5a6a','#ffcf4a','#ffffff'][b.kind];ctx.lineWidth=2.5;ctx.beginPath();
+    if(b.kind===0){for(let i=0;i<4;i++){ctx.lineTo(b.x+(i%2?3:-3)*(Math.floor(time*16)%2?1:-1),b.y-6+i*4)}}else if(b.kind===1){ctx.moveTo(b.x,b.y-7);ctx.lineTo(b.x,b.y+7);ctx.moveTo(b.x-3,b.y+(Math.floor(time*12)%2?-2:3));ctx.lineTo(b.x+3,b.y+(Math.floor(time*12)%2?-2:3))}else{ctx.moveTo(b.x,b.y-7);ctx.lineTo(b.x,b.y+7);ctx.moveTo(b.x-3,b.y+5);ctx.lineTo(b.x+3,b.y+5)}ctx.stroke()}
+  if(phase!=='attract'){if(P.alive)drawCannon(P.x,PY);}
+  for(const b of booms){ctx.save();ctx.translate(b.x,b.y);ctx.strokeStyle=b.col;ctx.lineWidth=2;ctx.shadowColor=b.col;ctx.shadowBlur=10;const n=b.big?14:8,r=b.big?24*(1.4-b.t)+6:14;for(let i=0;i<n;i++){const a=i/n*Math.PI*2+(b.big?time*3:0);ctx.beginPath();ctx.moveTo(Math.cos(a)*r*.4,Math.sin(a)*r*.4);ctx.lineTo(Math.cos(a)*r,Math.sin(a)*r);ctx.stroke()}ctx.restore()}
+  for(const p of pops)text(p.text,p.x,p.y,14,'#ffcf4a');
+  // HUD
+  text('SCORE',20,22,10,'#8aa0b8','left');text(String(score).padStart(5,'0'),20,42,16,'#e8f4ff','left');text('HI',W/2,22,10,'#8aa0b8');text(String(Math.max(hi,score)).padStart(5,'0'),W/2,42,16,'#e8f4ff');text('WAVE',W-20,22,10,'#8aa0b8','right');text(String(wave),W-20,42,16,'#6cff9a','right');
+  text(String(Math.max(0,lives)),18,H-20,12,'#6cff9a','left');for(let i=0;i<Math.min(5,lives-(P.alive?1:0));i++){ctx.save();ctx.scale(.6,.6);drawCannon((50+i*44)/.6,(H-26)/.6);ctx.restore()}
+  const shade=()=>{ctx.fillStyle='rgba(3,5,10,.72)';ctx.fillRect(0,0,W,H)};
+  if(phase==='ready')text('WAVE '+wave,W/2,H*.48,22,'#6cff9a');
+  if(phase==='cleared')text('WAVE CLEARED',W/2,H*.48,20,'#ffcf4a');
+  if(phase==='attract'){shade();text('BUNKER',W/2,H*.24,40,'#6cff9a');text('LINE',W/2,H*.24+52,40,'#6cff9a');
+    const rows=[['eye','#ff6ad5','30 PTS'],['cap','#6cd8ff','20 PTS'],['pod','#6cff9a','10 PTS'],['barge','#ffcf4a','??? PTS']];rows.forEach(([n,c,t],i)=>{const s=spr(n,Math.floor(time*2)%SPR[n].length,c);const y=H*.46+i*40;ctx.drawImage(s,W/2-110,y-12,n==='barge'?48:36,n==='barge'?21:24);text(t,W/2-40,y,12,'#e8f4ff','left')});
+    if(Math.floor(time*2)%2===0)text('PRESS ENTER OR TAP',W/2,H*.8,12,'#e8f4ff');text('1 TOKEN',W/2,H*.8+24,10,'#8aa0b8')}
+  if(phase==='over'){shade();text('GAME OVER',W/2,H*.4,28,'#ff5a6a');text('SCORE '+score,W/2,H*.4+44,14,'#e8f4ff');text('WAVE '+wave,W/2,H*.4+72,10,'#8aa0b8');if(Math.floor(time*2)%2===0)text('PRESS ENTER OR TAP',W/2,H*.7,12,'#6cff9a')}
+  if(paused){shade();text('PAUSED',W/2,H/2,24,'#e8f4ff')}
+  // scanlines
+  ctx.fillStyle='rgba(0,0,0,.12)';for(let y=0;y<H;y+=3)ctx.fillRect(0,y,W,1);
+}
+makeBunkers();
+let last=performance.now();
+function frame(now){const dt=Math.max(0,Math.min(.033,(now-last)/1000));last=now;update(dt);render();requestAnimationFrame(frame)}
+requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>

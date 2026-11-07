@@ -253,7 +253,7 @@ function render(){
   if(paused){ctx.fillStyle='rgba(4,5,11,.6)';ctx.fillRect(0,0,W,H);text('PAUSED',W/2,H/2,40,'#e8ecff')}
 }
 let last=performance.now();
-function frame(now){const dt=Math.min(.05,(now-last)/1000);last=now;update(dt);render();requestAnimationFrame(frame)}
+function frame(now){const dt=Math.max(0,Math.min(.05,(now-last)/1000));last=now;update(dt);render();requestAnimationFrame(frame)}
 requestAnimationFrame(frame);
 window.__dr={get phase(){return phase},get score(){return score},get lives(){return lives},get wave(){return wave},get rocks(){return rocks.length}};
 })();

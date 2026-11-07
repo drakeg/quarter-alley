@@ -393,7 +393,7 @@ function render(){
 }
 demo=true;startMatch();
 let last=performance.now();
-function frame(now){const dt=Math.min(.04,(now-last)/1000);last=now;update(dt);render();requestAnimationFrame(frame)}
+function frame(now){const dt=Math.max(0,Math.min(.04,(now-last)/1000));last=now;update(dt);render();requestAnimationFrame(frame)}
 requestAnimationFrame(frame);
 window.__sb={get phase(){return phase},get score(){return score},get ladder(){return ladder},get mode(){return mode},get demo(){return demo},get a(){return A&&{meter:A.meter,wins:A.wins,hits:A.hits}},get b(){return B&&{meter:B.meter,wins:B.wins,hits:B.hits,name:B.name}}};
 })();

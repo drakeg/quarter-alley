@@ -465,7 +465,7 @@ const ord=n=>n+(['th','st','nd','rd'][(n%100>10&&n%100<14)?0:n%10<4?n%10:0]||'th
 /* ---------- loop ---------- */
 dist=0;position=0;
 let last=performance.now();
-function frame(now){const dt=Math.min(.05,(now-last)/1000);last=now;update(dt);render(dt);requestAnimationFrame(frame)}
+function frame(now){const dt=Math.max(0,Math.min(.05,(now-last)/1000));last=now;update(dt);render(dt);requestAnimationFrame(frame)}
 requestAnimationFrame(frame);
 window.__sc={get phase(){return phase},get pos(){return racePos()},get lap(){return lap},get speed(){return speed/maxSpeed},get x(){return playerX},get dist(){return dist},get track(){return trackLength},startQualify,startRace};
 })();

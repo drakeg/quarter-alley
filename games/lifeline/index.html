@@ -281,7 +281,7 @@ function render(){
 }
 placePeople();
 let last=performance.now();
-function frame(now){const dt=Math.min(.05,(now-last)/1000);last=now;update(dt);render();requestAnimationFrame(frame)}
+function frame(now){const dt=Math.max(0,Math.min(.05,(now-last)/1000));last=now;update(dt);render();requestAnimationFrame(frame)}
 requestAnimationFrame(frame);
 window.__ll={get phase(){return phase},get score(){return score},get lives(){return lives},get wave(){return wave},get enemies(){return enemies.map(e=>e.kind)},get people(){return people.map(p=>p.state)}};
 })();

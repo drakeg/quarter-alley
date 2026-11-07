@@ -295,7 +295,7 @@ document.addEventListener('visibilitychange',()=>{if(document.hidden&&phase==='p
 /* ---------- loop ---------- */
 dens=[0,0,0,0,0].map(()=>({full:false,bug:0,snake:0}));buildLanes();resetPlayer();
 let last=performance.now();
-function frame(now){const dt=Math.min(.05,(now-last)/1000);last=now;pollPad();update(dt);render();requestAnimationFrame(frame)}
+function frame(now){const dt=Math.max(0,Math.min(.05,(now-last)/1000));last=now;pollPad();update(dt);render();requestAnimationFrame(frame)}
 requestAnimationFrame(frame);
 window.__rr={get deaths(){return deaths},get phase(){return phase},get score(){return score},get lives(){return lives},get row(){return player.r},get dens(){return dens.filter(d=>d.full).length},start,
   safeUp(){const r=player.r-1;const l=laneAt(r);if(!l)return true;const x=player.x;if(r>=1&&r<=5)return l.items.some(it=>{const [a,b]=itemSpanX(l,it);const fx=x+l.sp*.13;return fx>a+8&&fx<b-8&&padSunk(it,time)<.5});return !l.items.some(it=>{const [a,b]=itemSpanX(l,it);return x+30>a-l.sp*.0&&x-30<b&&((l.sp>0&&a<x+20&&b>x-60)||(l.sp<0&&b>x-20&&a<x+60))})}};

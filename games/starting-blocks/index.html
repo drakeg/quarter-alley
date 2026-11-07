@@ -339,7 +339,7 @@ function render(){
 // attract: a lone runner warms up
 function attract(dt){if(phase!=='attract')return;ev='sprint';P.v=7;P.x+=P.v*dt;P.step+=P.v*dt*1.15;if(P.x>110){P.x=-5;camX=-5}camX+=(P.x-camX)*Math.min(1,dt*6)}
 let last=performance.now();
-function frame(now){const dt=Math.min(.04,(now-last)/1000);last=now;attract(dt);update(dt);render();requestAnimationFrame(frame)}
+function frame(now){const dt=Math.max(0,Math.min(.04,(now-last)/1000));last=now;attract(dt);update(dt);render();requestAnimationFrame(frame)}
 requestAnimationFrame(frame);
 })();
 </script>

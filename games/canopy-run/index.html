@@ -312,7 +312,7 @@ function render(){
 }
 resetPlayer(false);enterScreen(0);
 let last=performance.now();
-function frame(now){const dt=Math.min(.04,(now-last)/1000);last=now;update(dt);render();requestAnimationFrame(frame)}
+function frame(now){const dt=Math.max(0,Math.min(.04,(now-last)/1000));last=now;update(dt);render();requestAnimationFrame(frame)}
 requestAnimationFrame(frame);
 window.__cr={get phase(){return phase},get score(){return score},get lives(){return lives},get scr(){return scr},get found(){return found},get p(){return{x:P.x,y:P.y,layer:P.layer,state:P.state}},get type(){return screens[scr].type}};
 })();

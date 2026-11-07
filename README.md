@@ -25,6 +25,7 @@ A static website of original retro-style browser games. No build step, no server
 | **Burrow Bash** | Dig under the garden, pump pests until they pop and drop stones on them. |
 | **Marsh Shot** | Aim-and-fire bird shoot at sundown with a hound who laughs at your misses. 1 bird, 2 birds or clay discs. |
 | **Brickwave** | Paddle and bricks across twelve neon walls, with power-ups. |
+| **Bunker Line** | Hold the moon base against a marching grid of glow drones from behind crumbling bunkers. |
 
 ```
 quarter-alley/
@@ -51,7 +52,8 @@ quarter-alley/
     ├── starting-blocks/index.html
     ├── burrow-bash/index.html
     ├── marsh-shot/index.html
-    └── brickwave/index.html
+    ├── brickwave/index.html
+    └── bunker-line/index.html
 ├── leaderboards/index.html           ← public high scores (needs accounts)
 ├── supabase/schema.sql               ← database for accounts, tokens and scores
 ├── docs/LOGIN.md                     ← how to switch on accounts

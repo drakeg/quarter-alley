@@ -398,7 +398,7 @@ function drawHUD(){
 /* ---------- loop ---------- */
 let last=performance.now();
 function frame(now){
-  const dt=Math.min(.05,(now-last)/1000);last=now;
+  const dt=Math.max(0,Math.min(.05,(now-last)/1000));last=now;
   update(paused?0:dt);
   const bob=Math.sin(P.bob*2)*.06,shake=phase==='dead'?Math.max(0,deadT-2.4)*.6:0;
   camera.position.set(P.x+rnd(-shake,shake),2.4+bob,P.z+rnd(-shake,shake));

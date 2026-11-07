@@ -407,7 +407,7 @@ function hud(){const s=`${score}|${hi}|${level}|${lives}|${salt}`;if(s===lastHud
 /* ---------- loop ---------- */
 buildLevel();
 let last=performance.now(),hiSaveT=0;
-function frame(now){const dt=Math.min(.033,(now-last)/1000);last=now;update(dt);draw();hud();hiSaveT+=dt;if(hiSaveT>3){hiSaveT=0;saveHi()}requestAnimationFrame(frame)}
+function frame(now){const dt=Math.max(0,Math.min(.033,(now-last)/1000));last=now;update(dt);draw();hud();hiSaveT+=dt;if(hiSaveT>3){hiSaveT=0;saveHi()}requestAnimationFrame(frame)}
 requestAnimationFrame(frame);
 })();
 </script>

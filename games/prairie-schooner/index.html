@@ -615,7 +615,7 @@ function hunt(){
   }
   function loop(now){
     if(done)return;
-    const dt=Math.min(.05,(now-last)/1000);last=now;time-=dt;
+    const dt=Math.max(0,Math.min(.05,(now-last)/1000));last=now;time-=dt;
     const kv=110*dt;if(keys.ArrowLeft)ax-=kv;if(keys.ArrowRight)ax+=kv;if(keys.ArrowUp)ay-=kv;if(keys.ArrowDown)ay+=kv;ax=clamp(ax,0,319);ay=clamp(ay,0,179);
     spawn-=dt;if(spawn<=0&&time>2){spawn=rnd(.7,1.6);const t=pick(pool),s=SP[t],dir=Math.random()<.5?1:-1;an.push({t,s,x:dir>0?-s.w:320,y:ri(78,172),dir,dead:false,leg:0})}
     for(const a of an)if(!a.dead){a.x+=a.dir*a.s.sp*dt;a.leg+=dt*a.s.sp/6}

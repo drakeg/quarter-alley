@@ -259,7 +259,7 @@ function demo(dt){if(phase!=='attract')return;if(Math.random()<dt*.8&&meteors.le
   for(const b of bursts){b.t+=dt;const T=.32,hold=.24;b.r=b.t<T?b.max*(b.t/T):b.t<T+hold?b.max:b.max*Math.max(0,1-(b.t-T-hold)/.34);if(b.t>T+hold+.34)b.dead=true}bursts=bursts.filter(b=>!b.dead)}
 
 let last=performance.now();
-function frame(now){const dt=Math.min(.05,(now-last)/1000);last=now;demo(dt);update(dt);render();requestAnimationFrame(frame)}
+function frame(now){const dt=Math.max(0,Math.min(.05,(now-last)/1000));last=now;demo(dt);update(dt);render();requestAnimationFrame(frame)}
 requestAnimationFrame(frame);
 window.__sf={get phase(){return phase},get score(){return score},get wave(){return wave},get towns(){return towns?towns.filter(t=>t.alive).length:6},get meteors(){return meteors.map(m=>[m.x,m.y])},fire:(x,y)=>fire(undefined,x,y)};
 })();
