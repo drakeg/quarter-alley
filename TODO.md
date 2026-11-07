@@ -25,6 +25,7 @@ The running roadmap for the arcade. Check items off as they ship. Every game is 
 - [x] **Marsh Shot** – aim-and-fire marsh bird shoot with a laughing hound; 1 bird, 2 birds or clay discs
 - [x] **Brickwave** – paddle, ball and twelve walls of bricks with power-ups
 - [x] **Bunker Line** – marching grid of glow drones, crumbling bunkers and a mystery comet barge
+- [x] **Soft Landing** – lunar lander with fuel, zoom-in near the surface and multiplier pads
 
 ### Up next
 - [ ] **Girder Gang** – climb girders and dodge rolling barrels to reach the top
@@ -39,7 +40,6 @@ The running roadmap for the arcade. Check items off as they ship. Every game is 
 ### Later
 - [ ] **Cube Hop** – hop a pyramid of cubes to change their colors
 - [ ] **Skyknights** – riders on flying mounts clash in the air, great for two players
-- [ ] **Soft Landing** – land a craft gently with limited fuel
 - [ ] **Lightline** – light-trail duels for 2–4 players
 - [ ] **Blast Block** – bomb-maze party game for up to 4 gamepads
 - [ ] **Twin Fury** – twin-stick arena survival

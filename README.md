@@ -26,6 +26,7 @@ A static website of original retro-style browser games. No build step, no server
 | **Marsh Shot** | Aim-and-fire bird shoot at sundown with a hound who laughs at your misses. 1 bird, 2 birds or clay discs. |
 | **Brickwave** | Paddle and bricks across twelve neon walls, with power-ups. |
 | **Bunker Line** | Hold the moon base against a marching grid of glow drones from behind crumbling bunkers. |
+| **Soft Landing** | Lunar lander: feather thrust and fuel to touch down softly on multiplier pads. |
 
 ```
 quarter-alley/
@@ -53,7 +54,8 @@ quarter-alley/
     ├── burrow-bash/index.html
     ├── marsh-shot/index.html
     ├── brickwave/index.html
-    └── bunker-line/index.html
+    ├── bunker-line/index.html
+    └── soft-landing/index.html
 ├── leaderboards/index.html           ← public high scores (needs accounts)
 ├── supabase/schema.sql               ← database for accounts, tokens and scores
 ├── docs/LOGIN.md                     ← how to switch on accounts
