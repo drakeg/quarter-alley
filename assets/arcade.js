@@ -15,8 +15,8 @@
     repo: 'drakeg/quarter-alley',
     // Accounts: paste your Supabase project URL and anon (public) key to switch sign-in on.
     // See docs/LOGIN.md. Leave empty and everyone plays as a guest.
-    supabaseUrl: '',
-    supabaseAnonKey: ''
+    supabaseUrl: 'https://elnvjgphoptaycrneqso.supabase.co',
+    supabaseAnonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVsbnZqZ3Bob3B0YXljcm5lcXNvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTQwNzY1OTYsImV4cCI6MjEwOTY1MjU5Nn0.GyIJRN-1J4wdYeQbfuiY5eb1MR4vsbWVNn0sJyAVk2w'
   };
   const GAMES = ['Arcade home page', 'Stack Shack', 'Prairie Schooner', 'Ashfall', 'Glitch Grid', 'Sunset Circuit', 'Spore Storm', 'Rascal Road', 'Iron Treads', 'Starfall', 'Ridgeline', 'Driftrock', 'Lifeline', 'Canopy Run', 'Spring Brawl', 'Hive Swarm', 'Starting Blocks', 'Burrow Bash', 'Marsh Shot', 'Brickwave', 'Bunker Line', 'Soft Landing', 'Cube Hop', 'Fenceline', 'Lightline', 'Accounts / sign-in', 'Leaderboards'];
   const KEY = 'qa-wallet';

@@ -56,7 +56,9 @@ The running roadmap for the arcade. Check items off as they ship. Every game is 
 - [x] Tokens stored on the server for signed-in players (spending happens server-side)
 - [x] High scores saved to the player's account
 - [x] Leaderboards page
-- [ ] Turn on sign-in: create the Supabase project and paste its URL and key into `assets/arcade.js` (see `docs/LOGIN.md`)
+- [x] Turn on sign-in: Supabase project created and connected in `assets/arcade.js`
+- [ ] Set the Site URL and redirect URLs in Supabase (Authentication → URL Configuration, see `docs/LOGIN.md` step 2)
+- [ ] Custom email sender (SMTP) in Supabase before real traffic; the built-in sender only sends a few emails an hour
 - [ ] Profile page: display name, avatar color, play history
 - [ ] Weekly leaderboards and "score of the day"
 

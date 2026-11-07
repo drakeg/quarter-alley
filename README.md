@@ -110,7 +110,7 @@ Every game start goes through `Arcade.insertCoin(callback)` in `assets/arcade.js
 - Admins (set in the database, see `docs/LOGIN.md`) play free and can give tokens to other players.
 - Settings are at the top of `assets/arcade.js` (`maxTokens`, `refillMinutes`, `freePlay`). Keep them in step with the numbers in `supabase/schema.sql`.
 - Add `?freeplay` to any game URL to test without spending tokens.
-- Tokens live in the player's browser (localStorage). That is fine for free tokens, but anyone can edit them, so selling tokens for real money needs a small backend with accounts and server-side balances.
+- Guests' tokens live in their browser (localStorage), where anyone can edit them. Signed-in players' tokens live on the server, which is the groundwork for selling tokens later.
 
 To gate a new game, include the script and wrap its start:
 
@@ -124,7 +124,7 @@ To gate a new game, include the script and wrap its start:
 
 ## Accounts and leaderboards
 
-Players can sign in with an email link, Google or GitHub. Signed-in players' tokens live on the server and their scores go to the [leaderboards](leaderboards/). Accounts are off until a Supabase project is connected; follow [docs/LOGIN.md](docs/LOGIN.md). Games report scores with `Arcade.submitScore(score)` at game over.
+Players can sign in with an email link, Google or GitHub. Signed-in players' tokens live on the server and their scores go to the [leaderboards](leaderboards/). Every new player starts with their own wallet of 30 tokens. Guests still play with tokens saved in their browser. Setup notes are in [docs/LOGIN.md](docs/LOGIN.md). Games report scores with `Arcade.submitScore(score)` at game over.
 
 ## Roadmap
 

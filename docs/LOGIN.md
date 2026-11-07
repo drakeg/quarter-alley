@@ -9,6 +9,8 @@ The arcade works without accounts: everyone plays as a guest and tokens and high
 
 Accounts use [Supabase](https://supabase.com), which has a free tier that comfortably covers a hobby arcade.
 
+**Status:** the `quarter-alley` Supabase project exists, `schema.sql` has been run, and the site is connected (steps 1 and 3 are done). Step 2 still needs doing in the Supabase dashboard so sign-in links come back to the live site.
+
 ## 1. Create the project (about 5 minutes)
 
 1. Sign up at supabase.com and click **New project**. Pick any name (for example `quarter-alley`), set a database password, and choose the region closest to most players.
