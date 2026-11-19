@@ -63,7 +63,10 @@ The running roadmap for the arcade. Check items off as they ship. Every game is 
 - [ ] Weekly leaderboards and "score of the day"
 
 ### Making money (later)
-- [ ] Token packs through Stripe Checkout (needs a small server function to credit tokens)
+- [x] Token shop: three packs through Stripe Checkout, webhook credits tokens, purchase ledger (see `docs/PAYMENTS.md`)
+- [ ] Connect Stripe: add `STRIPE_SECRET_KEY` and `STRIPE_WEBHOOK_SECRET` in Supabase (test mode first)
+- [ ] Remove tokens automatically when a purchase is refunded (`charge.refunded`)
+- [ ] Purchase history in the account menu
 - [ ] Optional "watch a short ad for 5 tokens"
 - [ ] Sponsor slots: Sunset Circuit billboards, cabinet marquees
 - [ ] Supporter tier: unlimited play, cosmetic skins

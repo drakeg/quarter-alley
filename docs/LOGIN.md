@@ -78,6 +78,6 @@ Until a provider is enabled, its button tells players to use the email link inst
 
 Scores are still reported by the player's browser, so a determined cheater could fake one. Server-side replay checks are a possible later step if leaderboards start to matter (for example, prizes).
 
-## Selling tokens later
+## Selling tokens
 
-The wallet lives on the server now, which is the groundwork for paid tokens. The usual next step is Stripe Checkout plus a small Supabase Edge Function that receives Stripe's payment webhook and adds tokens to the buyer's wallet.
+The token shop is built: Stripe Checkout plus two Supabase Edge Functions. It stays hidden until Stripe is connected. See [PAYMENTS.md](PAYMENTS.md).

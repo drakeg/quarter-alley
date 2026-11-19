@@ -157,6 +157,13 @@
   .qa-btn:hover,.qa-btn:focus-visible{border-color:#f2b632;outline:none}
   .qa-btn.qa-pri{background:#f2b632;border-color:#f2b632;color:#1b1408}
   .qa-btn[disabled]{opacity:.5;cursor:default}
+  .qa-btn[hidden]{display:none}
+  .qa-packs{display:flex;flex-direction:column;gap:8px}
+  .qa-pack{display:flex;align-items:center;gap:12px;width:100%;text-align:left;font:inherit;color:#f4ead2;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.18);border-radius:10px;padding:10px 12px;cursor:pointer}
+  .qa-pack:hover,.qa-pack:focus-visible{border-color:#f2b632;outline:none;background:rgba(242,182,50,.08)}
+  .qa-pack[disabled]{opacity:.5;cursor:default}
+  .qa-pk{flex:1;display:flex;flex-direction:column;gap:3px}.qa-pk b{font-size:16px}.qa-pk small{font-size:12px;color:#b9b2a2}.qa-pk em{font-style:normal;color:#f2b632}
+  .qa-pr{font:800 16px/1 system-ui,sans-serif;color:#f2b632;font-variant-numeric:tabular-nums}
   .qa-fly{position:fixed;z-index:2147483001;pointer-events:none;line-height:0}
   .qa-form{width:min(100%,480px);background:#1b1d22;border:1px solid rgba(255,255,255,.14);border-radius:12px;padding:20px;display:flex;flex-direction:column;gap:12px;text-align:left;max-height:100%;overflow:auto;box-shadow:0 30px 80px rgba(0,0,0,.6)}
   .qa-form h2{margin:0;font:800 22px/1.1 system-ui,sans-serif}
@@ -239,10 +246,12 @@
         </div>
         <p class="qa-sub" data-note>${outOf ? '' : 'Drag the token into the slot, click it, or press Enter.'}</p>
         ${who ? `<p class="qa-sub" style="opacity:.75">${who}</p>` : ''}
-        <div class="qa-row">${outOf ? '<a class="qa-btn qa-pri" href="' + homeHref() + '">Back to the arcade</a>' : ''}<button type="button" class="qa-btn" data-cancel>${outOf ? 'Close' : 'Not now'}</button></div>
+        <div class="qa-row">${outOf ? '<button type="button" class="qa-btn qa-pri" data-buy hidden>Buy tokens</button><a class="qa-btn" href="' + homeHref() + '">Back to the arcade</a>' : ''}<button type="button" class="qa-btn" data-cancel>${outOf ? 'Close' : 'Not now'}</button></div>
       </div>`);
     const el = m.el, slot = el.querySelector('[data-slot]'), coin = el.querySelector('[data-coin]');
     el.querySelector('[data-cancel]').onclick = () => m.close();
+    const buy = el.querySelector('[data-buy]');
+    if (buy) { shopInfo().then(sh => { if (sh.ready) buy.hidden = false; }); buy.onclick = () => { m.close(); openShop(); }; }
     let busy = false, dragged = false;
     function insert() {
       if (busy || outOf) return; busy = true;
@@ -398,6 +407,7 @@
       </fieldset>` : ''}
       <div class="qa-row" style="justify-content:flex-start">
         <button type="submit" class="qa-btn qa-pri">Save name</button>
+        ${isAdmin() ? '' : '<button type="button" class="qa-btn" data-buy hidden>Buy tokens</button>'}
         <a class="qa-btn" href="${rootHref()}leaderboards/">Leaderboards</a>
         <button type="button" class="qa-btn" data-out>Sign out</button>
         <button type="button" class="qa-btn" data-cancel>Close</button>
@@ -421,6 +431,8 @@
     };
     $('[data-out]').onclick = async () => { await acct.client.auth.signOut(); acct.user = null; acct.wallet = null; acct.profile = null; emit(); m.close(); toast('Signed out. You are playing as a guest.'); };
     $('[data-cancel]').onclick = () => m.close();
+    const buy = $('[data-buy]');
+    if (buy) { shopInfo().then(sh => { if (sh.ready) buy.hidden = false; }); buy.onclick = () => { m.close(); openShop(); }; }
     setTimeout(() => $('#qa-name').focus(), 30);
   }
 
@@ -462,6 +474,61 @@
     setTimeout(() => $('#qa-what').focus(), 30);
   }
 
+  /* ---------- token shop (Stripe Checkout via the Supabase "shop" function) ---------- */
+  let shopCache = null;
+  function shopInfo() { // { ready, packs }. ready stays false until the Stripe secrets are set in Supabase.
+    if (!acct.configured) return Promise.resolve({ ready: false, packs: [] });
+    if (!shopCache) shopCache = fetch(CONFIG.supabaseUrl + '/functions/v1/shop', { headers: { apikey: CONFIG.supabaseAnonKey, Authorization: 'Bearer ' + CONFIG.supabaseAnonKey } })
+      .then(r => r.ok ? r.json() : { ready: false, packs: [] }).catch(() => { shopCache = null; return { ready: false, packs: [] }; });
+    return shopCache;
+  }
+  const money = c => '$' + (c / 100).toFixed(2);
+  async function openShop() {
+    if (open) return;
+    if (!signedIn()) { signIn(); toast('Sign in first so the tokens you buy are saved to your account.'); return; }
+    const sh = await shopInfo();
+    if (!sh.ready) { toast('The token shop is not open yet.'); return; }
+    const m = modal(`<div class="qa-form" aria-labelledby="qa-sht">
+      <h2 id="qa-sht">Token shop</h2>
+      <p style="font-size:14px;color:#cfc6b4;margin:0">Bought tokens never expire and stack on top of your free tokens. 1 token = 1 game.</p>
+      <div class="qa-packs">${sh.packs.map(p => `<button type="button" class="qa-pack" data-pack="${esc(p.id)}">
+        ${coinSVG(34)}<span class="qa-pk"><b>${p.tokens} tokens</b><small>${esc(p.name)}${p.tag ? ` · <em>${esc(p.tag)}</em>` : ''}</small></span><span class="qa-pr">${money(p.cents)}</span></button>`).join('')}</div>
+      <p class="qa-msg" id="qa-shm" aria-live="polite"></p>
+      <p style="font-size:12px;color:#8f887a;margin:0">Payment is handled by Stripe. Quarter Alley never sees your card.</p>
+      <div class="qa-row" style="justify-content:flex-start"><button type="button" class="qa-btn" data-cancel>Close</button></div></div>`);
+    const el = m.el, msg = el.querySelector('#qa-shm');
+    el.querySelector('[data-cancel]').onclick = () => m.close();
+    el.querySelectorAll('[data-pack]').forEach(b => b.onclick = async () => {
+      el.querySelectorAll('[data-pack]').forEach(x => x.disabled = true);
+      msg.className = 'qa-msg'; msg.textContent = 'Opening secure checkout…';
+      try {
+        const { data } = await acct.client.auth.getSession();
+        const tok = data && data.session && data.session.access_token;
+        const r = await fetch(CONFIG.supabaseUrl + '/functions/v1/shop', { method: 'POST', headers: { apikey: CONFIG.supabaseAnonKey, Authorization: 'Bearer ' + tok, 'Content-Type': 'application/json' }, body: JSON.stringify({ pack: b.dataset.pack, return_url: location.href.split('#')[0] }) });
+        const j = await r.json().catch(() => ({}));
+        if (!r.ok || !j.url) throw new Error(j.error || 'net');
+        location.href = j.url;
+      } catch (e) {
+        el.querySelectorAll('[data-pack]').forEach(x => x.disabled = false);
+        msg.className = 'qa-msg qa-err'; msg.textContent = e.message === 'not_signed_in' ? 'Your sign-in has expired. Sign in again and retry.' : 'Checkout could not be opened. Try again in a moment.';
+      }
+    });
+    setTimeout(() => { const f = el.querySelector('[data-pack]'); f && f.focus(); }, 30);
+  }
+  // Back from Stripe Checkout: thank the player and pick up the new balance once the payment notice lands.
+  (function shopReturn() {
+    let q; try { q = new URLSearchParams(location.search); } catch (e) { return; }
+    const st = q.get('shop'); if (!st) return;
+    q.delete('shop'); try { history.replaceState(null, '', location.pathname + (q.toString() ? '?' + q : '') + location.hash); } catch (e) {}
+    const say = () => {
+      if (st === 'cancel') { toast('Purchase canceled. You were not charged.'); return; }
+      toast('Thanks! Your tokens are on their way.', 6000);
+      const before = tokens(); let tries = 0;
+      const poll = setInterval(async () => { tries++; await refreshAccount(); if (tokens() > before || tries >= 8) { clearInterval(poll); if (tokens() > before) { creditSound(); toast(`Tokens added. You now have ${fmtTokens(tokens())}.`); } } }, 2500);
+    };
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', () => setTimeout(say, 600)); else setTimeout(say, 600);
+  })();
+
   /* ---------- toolbar ---------- */
   function chip() {
     const b = document.createElement('span'); b.className = 'qa-chip';
@@ -494,7 +561,7 @@
   setInterval(() => { if (signedIn() && !document.hidden) refreshAccount(); }, 120000);
 
   window.Arcade = {
-    insertCoin, tokens, reportBug, coinSVG, submitScore, topScores, signIn, accountMenu, toast,
+    insertCoin, tokens, reportBug, openShop, shopInfo, coinSVG, submitScore, topScores, signIn, accountMenu, toast,
     onChange: f => listeners.push(f),
     get freePlay() { return freePlay; }, get maxTokens() { return CAP; }, get refillMinutes() { return CONFIG.refillMinutes; },
     get isAdmin() { return isAdmin(); }, nextTokenIn, fmtTokens, fmtWait,

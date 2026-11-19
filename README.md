@@ -64,7 +64,10 @@ quarter-alley/
     └── lightline/index.html
 ├── leaderboards/index.html           ← public high scores (needs accounts)
 ├── supabase/schema.sql               ← database for accounts, tokens and scores
+├── supabase/payments.sql             ← purchase ledger for the token shop
+├── supabase/functions/               ← shop + stripe-webhook (Edge Functions)
 ├── docs/LOGIN.md                     ← how to switch on accounts
+├── docs/PAYMENTS.md                  ← how to connect Stripe for the token shop
 └── TODO.md                           ← roadmap
 ```
 
