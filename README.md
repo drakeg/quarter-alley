@@ -157,6 +157,10 @@ To gate a new game, include the script and wrap its start:
 
 Players can sign in with an email link, Google or GitHub. Signed-in players' tokens live on the server and their scores go to the [leaderboards](leaderboards/). Every new player starts with their own wallet of 30 tokens. Guests still play with tokens saved in their browser. Setup notes are in [docs/LOGIN.md](docs/LOGIN.md). Games report scores with `Arcade.submitScore(score)` at game over.
 
+## Community and sponsorships
+
+Join [GitHub Discussions](https://github.com/drakeg/quarter-alley/discussions) to suggest original games, ask gameplay questions, and share feedback. See [community and sponsorship guidance](docs/COMMUNITY.md) for discussion categories, moderation and supporter plans. Account and payment matters belong in the private [contact form](contact/), not public discussions.
+
 ## Roadmap and contributing
 
 Current sprint and plan: [SPRINTS.md](SPRINTS.md). Prioritized work: [BACKLOG.md](BACKLOG.md). Releases: [RELEASES.md](RELEASES.md). How to contribute: [CONTRIBUTING.md](CONTRIBUTING.md) and [AGENTS.md](AGENTS.md). Security: [SECURITY.md](SECURITY.md).
