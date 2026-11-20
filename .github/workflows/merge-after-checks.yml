@@ -1,0 +1,66 @@
+name: Merge PR after verified checks
+
+# A trusted workflow: never checks out or executes PR code with write permissions.
+# Runs after both CI and CodeQL complete; the last successful workflow run
+# will merge only if every expected job for the exact PR head SHA succeeded.
+on:
+  workflow_run:
+    workflows: ["CI", "CodeQL"]
+    types: [completed]
+
+permissions:
+  contents: write
+  pull-requests: write
+  checks: read
+
+jobs:
+  merge:
+    if: ${{ github.event.workflow_run.event == 'pull_request' && github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Merge same-repository PR when all checks pass
+        uses: actions/github-script@v8
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            const run = context.payload.workflow_run;
+            const expected = [
+              'Site checks and browser tests',
+              'Docker Compose environment',
+              'Mad Mallard standards',
+              'Analyze JavaScript and TypeScript'
+            ];
+            // Only repository-owned branches. Never execute code from a PR here.
+            const prs = await github.paginate(github.rest.pulls.list, {
+              owner, repo, state: 'open', per_page: 100
+            });
+            for (const pr of prs) {
+              if (pr.draft || pr.head.repo?.full_name !== `${owner}/${repo}` ||
+                  pr.head.sha !== run.head_sha) continue;
+              const checks = await github.paginate(github.rest.checks.listForRef, {
+                owner, repo, ref: pr.head.sha, per_page: 100
+              }, response => response.data.check_runs);
+              const latest = new Map();
+              for (const check of checks) {
+                if (check.app?.slug !== 'github-actions') continue;
+                const previous = latest.get(check.name);
+                if (!previous || new Date(check.started_at || 0) > new Date(previous.started_at || 0)) {
+                  latest.set(check.name, check);
+                }
+              }
+              const missing = expected.filter(name => latest.get(name)?.conclusion !== 'success');
+              if (missing.length) {
+                core.info(`PR #${pr.number}: waiting for successful checks: ${missing.join(', ')}`);
+                continue;
+              }
+              try {
+                await github.rest.pulls.merge({
+                  owner, repo, pull_number: pr.number,
+                  sha: pr.head.sha, merge_method: 'squash'
+                });
+                core.info(`Merged PR #${pr.number} after all required checks passed.`);
+              } catch (error) {
+                // Branch protections and conflicts are authoritative. Do not bypass.
+                core.warning(`PR #${pr.number} was not merged: ${error.message}`);
+              }
+            }
