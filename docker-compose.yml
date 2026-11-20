@@ -3,7 +3,7 @@
 #   docker compose --profile test run --rm tests   → browser tests against that server
 services:
   web:
-    image: nginx:1.27-alpine
+    image: nginx:1.31-alpine
     ports:
       - "${QA_PORT:-8080}:80"           # binds all interfaces, so the LAN can reach it
     volumes:
