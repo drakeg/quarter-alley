@@ -1,0 +1,26 @@
+title: "Game ideas"
+labels: ["game-idea"]
+body:
+  - type: markdown
+    attributes:
+      value: "Suggest an original arcade game or a feature for an existing cabinet. Please do not submit copyrighted characters, names, or art."
+  - type: input
+    id: concept
+    attributes:
+      label: Game concept
+      description: A short original name and pitch
+      placeholder: "A new arcade cabinet about..."
+    validations:
+      required: true
+  - type: textarea
+    id: gameplay
+    attributes:
+      label: Gameplay and controls
+      description: Describe the core loop and desktop/mobile controls.
+    validations:
+      required: true
+  - type: textarea
+    id: value
+    attributes:
+      label: Why players would return
+      description: What makes this fun or replayable?
