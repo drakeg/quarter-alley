@@ -1,0 +1,29 @@
+/* Shared look for text pages (policies, contact). Matches the hub's night-arcade palette. */
+:root{
+  --bg:#0e1828;--cab:#1b2d47;--line:#2d4769;--cream:#f3e6c8;--cherry:#e2483d;--mustard:#f2b632;--muted:#8ea3bb;
+  --display:"Bungee","Arial Black",Impact,sans-serif;--body:"Chivo","Segoe UI",system-ui,sans-serif;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--cream)}
+body{font-family:var(--body);font-size:16px;line-height:1.6}
+.wrap{max-width:760px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:16px 48px;display:flex;flex-direction:column;gap:16px}
+.back{font-size:12px;color:var(--muted);text-decoration:none;letter-spacing:.12em;text-transform:uppercase}
+.back:hover,.back:focus-visible{color:var(--mustard)}
+h1{font-family:var(--display);font-weight:400;font-size:clamp(28px,6vw,44px);line-height:1.05;margin:6px 0 0;color:var(--cherry)}
+h2{font-size:19px;margin:18px 0 4px;color:var(--mustard)}
+p,li{max-width:68ch}
+ul{padding-left:1.2em;margin:6px 0}
+a{color:var(--cream)}
+a:focus-visible,button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible{outline:2px solid var(--mustard);outline-offset:2px}
+.lede{color:var(--muted);margin:0}
+.note{background:rgba(242,182,50,.08);border:1px solid rgba(242,182,50,.35);border-radius:10px;padding:12px 14px}
+.legal-nav{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:14px;color:var(--muted);border-top:1px solid var(--line);padding-top:16px;margin-top:8px}
+form.card{background:var(--cab);border:1px solid var(--line);border-radius:12px;padding:18px;display:flex;flex-direction:column;gap:12px}
+label{display:flex;flex-direction:column;gap:5px;font-size:14px;color:var(--muted)}
+input,select,textarea{font:16px/1.4 var(--body);color:var(--cream);background:#0b1422;border:1px solid var(--line);border-radius:8px;padding:9px 10px;width:100%}
+textarea{min-height:140px;resize:vertical}
+button.primary{align-self:flex-start;font:700 15px var(--body);color:#1b1408;background:var(--mustard);border:0;border-radius:999px;padding:10px 20px;cursor:pointer}
+button.primary[disabled]{opacity:.6;cursor:default}
+.msg{min-height:1.4em;margin:0;font-size:14px}.msg.err{color:#ff8a7a}.msg.ok{color:#8fe3a6}
+.hp{position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden}

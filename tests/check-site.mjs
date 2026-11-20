@@ -10,7 +10,8 @@ const errors = [];
 const fail = (msg) => errors.push(msg);
 
 const games = readdirSync(join(root, 'games')).filter((d) => statSync(join(root, 'games', d)).isDirectory()).sort();
-const pages = ['index.html', 'leaderboards/index.html', ...games.map((g) => `games/${g}/index.html`)];
+const extra = ['leaderboards', 'contact', 'legal/terms', 'legal/privacy', 'legal/refunds'];
+const pages = ['index.html', ...extra.map((d) => `${d}/index.html`), ...games.map((g) => `games/${g}/index.html`)];
 
 // 1. Every inline script and shared script compiles.
 function compile(code, where) {
@@ -57,7 +58,29 @@ const titles = [...hub.matchAll(/title:\s*"([^"]+)"/g)].map((m) => m[1]);
 const bugForm = read('.github/ISSUE_TEMPLATE/bug_report.yml');
 for (const t of titles) if (!bugForm.includes(t)) fail(`bug_report.yml: "${t}" is not in the game dropdown`);
 
-// 4. Secrets never ship in the site or repo.
+// 4. Policy pages are linked from the home page and every policy page links the others (needed for payment approval).
+for (const link of ['legal/terms/', 'legal/privacy/', 'legal/refunds/', 'contact/']) {
+  if (!hub.includes(`href="${link}"`)) fail(`index.html: footer is missing a link to ${link}`);
+}
+for (const d of extra.filter((d) => d !== 'leaderboards')) {
+  const html = read(`${d}/index.html`);
+  for (const link of ['legal/terms/', 'legal/privacy/', 'legal/refunds/']) if (!html.includes(link)) fail(`${d}: no link to ${link}`);
+  if (/<a\s[^>]*href=["']mailto:/i.test(html)) fail(`${d}: don't publish an email address; use the contact form`);
+}
+
+// 4b. Every relative link, script, stylesheet and icon in page markup points at something that exists.
+for (const page of pages) {
+  const dir = page.slice(0, page.lastIndexOf('/') + 1);
+  const markup = read(page).replace(/<script(\s[^>]*)?>[\s\S]*?<\/script>/gi, (m, a) => (a && /\bsrc=/.test(a) ? `<script${a}>` : ''));
+  for (const [, url] of markup.matchAll(/\s(?:href|src)=["']([^"'#?]*)[^"']*["']/g)) {
+    if (!url || /^(?:[a-z]+:|\/\/|\$\{)/i.test(url)) continue;
+    const target = join(root, dir, url);
+    const ok = url.endsWith('/') ? existsSync(join(target, 'index.html')) : existsSync(target);
+    if (!ok) fail(`${page}: broken link "${url}"`);
+  }
+}
+
+// 5. Secrets never ship in the site or repo.
 const scan = ['assets/arcade.js', ...pages, 'README.md', 'docs/LOGIN.md', 'docs/PAYMENTS.md',
   'supabase/functions/shop/index.ts', 'supabase/functions/stripe-webhook/index.ts'].filter((p) => existsSync(join(root, p)));
 for (const p of scan) {

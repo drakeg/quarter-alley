@@ -73,9 +73,12 @@ quarter-alley/
 ├── leaderboards/index.html           ← public high scores (needs accounts)
 ├── supabase/schema.sql               ← database for accounts, tokens and scores
 ├── supabase/payments.sql             ← purchase ledger for the token shop
+├── supabase/support.sql              ← refunds and the contact inbox
 ├── supabase/functions/               ← shop + stripe-webhook (Edge Functions)
 ├── docs/LOGIN.md                     ← how to switch on accounts
 ├── docs/PAYMENTS.md                  ← how to connect Stripe for the token shop
+├── legal/terms · legal/privacy · legal/refunds  ← policy pages
+├── contact/                          ← contact form (private inbox in Supabase)
 ├── tests/                            ← static checks + browser tests (npm test)
 ├── docker-compose.yml                ← LAN test server and containerized tests
 └── AGENTS.md · CONTRIBUTING.md · SPRINTS.md · BACKLOG.md · RELEASES.md · SECURITY.md

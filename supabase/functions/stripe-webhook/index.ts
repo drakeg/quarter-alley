@@ -1,7 +1,8 @@
 // Quarter Alley: receives Stripe's payment events and adds the tokens to the buyer's wallet.
 // Point a Stripe webhook at this function's URL for: checkout.session.completed,
-// checkout.session.async_payment_succeeded. Deployed with JWT checks off: Stripe signs
-// each request instead, and this function rejects anything without a valid signature.
+// checkout.session.async_payment_succeeded, charge.refunded, charge.dispute.created.
+// Deployed with JWT checks off: Stripe signs each request instead, and this function
+// rejects anything without a valid signature.
 
 const PACKS: Record<string, number> = { pocket: 60, roll: 200, bucket: 500 }; // keep in step with the shop function
 
@@ -19,6 +20,19 @@ function sameText(a: string, b: string) {
   for (let i = 0; i < a.length; i++) d |= a.charCodeAt(i) ^ b.charCodeAt(i);
   return d === 0;
 }
+// Calls a database function as the server (service role). Players can't call these.
+function rpc(name: string, args: Record<string, unknown>) {
+  return fetch(`${env('SUPABASE_URL')}/rest/v1/rpc/${name}`, {
+    method: 'POST',
+    headers: {
+      apikey: env('SUPABASE_SERVICE_ROLE_KEY'),
+      Authorization: `Bearer ${env('SUPABASE_SERVICE_ROLE_KEY')}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(args),
+  });
+}
+
 async function verify(raw: string, header: string, secret: string) {
   const parts = header.split(',').map((p) => p.split('='));
   const t = parts.find(([k]) => k === 't')?.[1];
@@ -41,6 +55,18 @@ Deno.serve(async (req) => {
 
   const event = JSON.parse(raw);
   const type = event.type;
+
+  // Refunds and disputes take back tokens in proportion to the money returned.
+  if (type === 'charge.refunded' || type === 'charge.dispute.created') {
+    const o = event.data.object;
+    const pi = o.payment_intent;
+    const cents = type === 'charge.refunded' ? o.amount_refunded : o.amount;
+    if (!pi || !cents) return new Response('nothing to take back', { status: 200 });
+    const r = await rpc('refund_purchase', { p_payment_intent: pi, p_refunded_cents: cents });
+    if (!r.ok) { console.error('webhook: refund failed', r.status, await r.text()); return new Response('refund failed', { status: 500 }); }
+    return new Response('ok', { status: 200 });
+  }
+
   if (type !== 'checkout.session.completed' && type !== 'checkout.session.async_payment_succeeded') {
     return new Response('ignored', { status: 200 });
   }
@@ -55,17 +81,9 @@ Deno.serve(async (req) => {
     return new Response('missing data', { status: 200 }); // don't make Stripe retry forever
   }
 
-  const r = await fetch(`${env('SUPABASE_URL')}/rest/v1/rpc/credit_purchase`, {
-    method: 'POST',
-    headers: {
-      apikey: env('SUPABASE_SERVICE_ROLE_KEY'),
-      Authorization: `Bearer ${env('SUPABASE_SERVICE_ROLE_KEY')}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      p_user: user, p_session: s.id, p_pack: pack, p_tokens: tokens,
-      p_amount: s.amount_total ?? 0, p_currency: s.currency || 'usd',
-    }),
+  const r = await rpc('credit_purchase', {
+    p_user: user, p_session: s.id, p_pack: pack, p_tokens: tokens,
+    p_amount: s.amount_total ?? 0, p_currency: s.currency || 'usd', p_payment_intent: s.payment_intent || null,
   });
   if (!r.ok) {
     console.error('webhook: credit failed', r.status, await r.text());
