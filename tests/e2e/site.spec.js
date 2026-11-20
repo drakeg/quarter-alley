@@ -33,3 +33,29 @@ test('coin slot spends a guest token', async ({ page }) => {
   expect(await page.evaluate(() => Arcade.tokens())).toBe(29);
   expect(errors).toEqual([]);
 });
+
+test('signed-in player sees purchase history and policy links', async ({ page }) => {
+  const errors = await prepare(page);
+  // Stand-in for the Supabase client: one signed-in player with two purchases (one partly refunded).
+  await page.addInitScript(() => {
+    const rows = [
+      { created_at: '2026-11-18T12:00:00Z', pack: 'roll', tokens: 200, amount_cents: 499, refunded_tokens: 0 },
+      { created_at: '2026-11-10T12:00:00Z', pack: 'pocket', tokens: 60, amount_cents: 199, refunded_tokens: 30 },
+    ];
+    const chain = (result) => new Proxy({}, { get: (_, k) => (k === 'then' ? (res) => res(result) : k === 'maybeSingle' ? async () => result : () => chain(result)) });
+    window.supabase = { createClient: () => ({
+      auth: { getSession: async () => ({ data: { session: { access_token: 't', user: { id: 'u1', email: 'player@example.com' } } } }), onAuthStateChange: () => {}, signOut: async () => ({}) },
+      rpc: async (n) => (n === 'get_wallet' ? { data: [{ tokens: 12, games_played: 3, is_admin: false, last_regen: new Date().toISOString() }] } : { data: 0 }),
+      from: (t) => chain(t === 'purchases' ? { data: rows } : { data: { display_name: 'Tester' } }),
+    }) };
+  });
+  await page.goto('./');
+  await page.getByRole('button', { name: /Tester/ }).click();
+  const hist = page.locator('.qa-hist');
+  await expect(hist).toContainText('Purchases (2)');
+  await hist.locator('summary').click();
+  await expect(hist).toContainText('200 tokens');
+  await expect(hist).toContainText('30 refunded');
+  await expect(hist.getByRole('link', { name: 'refund policy' })).toHaveAttribute('href', './legal/refunds/');
+  expect(errors).toEqual([]);
+});

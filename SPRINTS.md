@@ -16,7 +16,7 @@ Sprints run one after another; scope changes go through the backlog. Each sprint
 
 **Outcome:** Live on GitHub Pages; accounts connected to Supabase; shop code deployed.
 
-## Sprint 1 — Standards and quality gates (current)
+## Sprint 1 — Standards and quality gates ✅
 
 **Goal:** Adopt the Mad Mallard standards so every change is tested and reviewable.
 
@@ -26,19 +26,24 @@ Sprints run one after another; scope changes go through the backlog. Each sprint
 - [x] GitHub Actions CI, CodeQL, Dependabot, PR template
 - [x] Docker Compose test server reachable on the LAN, plus a containerized test run
 - [x] Accurate, dynamic README badges
-- [ ] Merged after review, then tag **v1.0.0**
+- [x] Merged after review ([#2](https://github.com/drakeg/quarter-alley/pull/2))
+- [ ] Publish the **v1.0.0** GitHub release (owner: this session can't create releases)
+
+**Outcome:** CI, CodeQL, standards and Docker Compose checks green on `main`.
 
 **Acceptance:** CI green on the PR; standards audit and badge check pass; `docker compose up` serves the site to another device on the network.
 
-## Sprint 2 — First paying customer (next)
+## Sprint 2 — First paying customer (current)
 
 **Goal:** Everything needed for Stripe to approve the account and for a stranger to buy tokens with confidence.
 
-- Terms, Privacy and Refund policy pages, plus a contact route, linked from every page footer (Stripe requires these to activate an account)
-- Refunds automatically take back the refunded tokens (`charge.refunded`)
-- Purchase history in the account menu
-- Owner steps (Greg): Supabase URL configuration, connect Stripe in test mode, confirm the admin email, custom email sender
-- Decide the free-tier settings that make buying worthwhile (owner decision; see BACKLOG)
+- [x] Terms, Privacy and Refund policy pages, linked from the home page, leaderboards and the shop
+- [x] Contact page with a private, rate-limited inbox (no email address published)
+- [x] Refunds and disputes automatically take back tokens (`charge.refunded`, `charge.dispute.created`)
+- [x] Purchase history in the account menu
+- [x] Tests: policy pages, contact form, purchase history; static check for broken links
+- [ ] Owner steps: Supabase URL configuration, connect Stripe in test mode, confirm the admin email, custom email sender, review the policy pages
+- [ ] Owner decision: free-tier settings that make buying worthwhile (see BACKLOG)
 
 **Acceptance:** A test-mode purchase on the live site credits tokens; a refund removes them; the policy pages are live.
 

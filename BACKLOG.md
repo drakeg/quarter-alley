@@ -8,13 +8,17 @@ Every game is an original design with its own name, characters and art. Never us
 
 | Priority | Item | Sprint | Status |
 |---|---|---|---|
-| P0 | Mad Mallard standards: docs, CI, tests, Docker Compose, badges | 1 | In review |
-| P0 | Terms, Privacy and Refund policy pages + contact route in the footer (needed for Stripe activation) | 2 | Planned |
+| P0 | Mad Mallard standards: docs, CI, tests, Docker Compose, badges | 1 | ✅ Done (#2) |
+| P0 | Terms, Privacy and Refund policy pages + contact route in the footer (needed for Stripe activation) | 2 | In review |
+| P0 | Owner: review the policy pages (plain-language drafts, not legal advice) | 2 | Waiting on owner |
+| P0 | Owner: publish the v1.0.0 GitHub release | 1 | Waiting on owner |
 | P0 | Owner: set Site URL and redirect URLs in Supabase (Authentication → URL Configuration, `docs/LOGIN.md` step 2) | 2 | Waiting on owner |
 | P0 | Owner: connect Stripe in test mode (`STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, see `docs/PAYMENTS.md`) | 2 | Waiting on owner |
 | P0 | Owner: confirm the admin account's email so admin rights can be granted in Supabase | 2 | Waiting on owner |
-| P1 | Refunds take back the refunded tokens (`charge.refunded`) | 2 | Planned |
-| P1 | Purchase history in the account menu | 2 | Planned |
+| P1 | Refunds and disputes take back the refunded tokens | 2 | In review |
+| P1 | Purchase history in the account menu | 2 | In review |
+| P2 | Owner: add `charge.refunded` and `charge.dispute.created` to the Stripe webhook events when connecting Stripe | 2 | Waiting on owner |
+| P2 | Email the owner when a contact message arrives (Supabase database webhook or scheduled digest) | Later | Backlog |
 | P1 | Owner decision: free-tier settings (cap of 30, one token per 10 min) so buying is worthwhile | 2 | Needs decision |
 | P1 | Custom email sender (SMTP) in Supabase; the built-in sender only sends a few emails an hour | 2 | Waiting on owner |
 | P1 | Sponsor slots for small businesses (e.g. campgrounds, RV dealers): billboards in Sunset Circuit, cabinet marquees | Later | Backlog |

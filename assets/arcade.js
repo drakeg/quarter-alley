@@ -49,6 +49,8 @@
   write(read());
 
   /* ---------- accounts (Supabase) ---------- */
+  // Path from the current page back to the site root, taken from how this script was included ("../../assets/arcade.js" → "../../").
+  const ROOT = (() => { const me = document.currentScript; const src = me && me.getAttribute('src') || ''; const i = src.lastIndexOf('assets/arcade.js'); return i > 0 ? src.slice(0, i) : './'; })();
   const acct = { configured: !!(CONFIG.supabaseUrl && CONFIG.supabaseAnonKey), client: null, user: null, profile: null, wallet: null, ready: null, error: '' };
   const signedIn = () => !!(acct.client && acct.user);
   const isAdmin = () => !!(signedIn() && acct.wallet && acct.wallet.is_admin);
@@ -162,6 +164,11 @@
   .qa-pack{display:flex;align-items:center;gap:12px;width:100%;text-align:left;font:inherit;color:#f4ead2;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.18);border-radius:10px;padding:10px 12px;cursor:pointer}
   .qa-pack:hover,.qa-pack:focus-visible{border-color:#f2b632;outline:none;background:rgba(242,182,50,.08)}
   .qa-pack[disabled]{opacity:.5;cursor:default}
+  .qa-hist{font-size:13px;color:#cfc6b4;border:1px solid rgba(255,255,255,.14);border-radius:8px;padding:8px 12px}
+  .qa-hist summary{cursor:pointer;color:#f4ead2;font-weight:600}
+  .qa-hist ul{list-style:none;margin:8px 0;padding:0;display:flex;flex-direction:column;gap:4px}
+  .qa-hist li{display:flex;justify-content:space-between;gap:10px;font-variant-numeric:tabular-nums}
+  .qa-hist em{font-style:normal;color:#ff9b8a}.qa-hist p{margin:6px 0 0}.qa-hist a{color:#f4ead2}
   .qa-pk{flex:1;display:flex;flex-direction:column;gap:3px}.qa-pk b{font-size:16px}.qa-pk small{font-size:12px;color:#b9b2a2}.qa-pk em{font-style:normal;color:#f2b632}
   .qa-pr{font:800 16px/1 system-ui,sans-serif;color:#f2b632;font-variant-numeric:tabular-nums}
   .qa-fly{position:fixed;z-index:2147483001;pointer-events:none;line-height:0}
@@ -314,7 +321,7 @@
       }, 1000);
     }
   }
-  function rootHref() { const p = location.pathname; return p.includes('/games/') ? '../../' : p.includes('/leaderboards/') ? '../' : './'; }
+  function rootHref() { return ROOT; }
   function homeHref() { return rootHref(); }
 
   /* ---------- scores ---------- */
@@ -397,6 +404,7 @@
         <div class="qa-count"><span>${w.games_played || 0}</span><small>games played</small></div>
       </div>
       <label>Display name on leaderboards<input id="qa-name" maxlength="20" value="${esc(displayName())}"></label>
+      <div id="qa-hist" hidden></div>
       <p class="qa-msg" id="qa-amsg" aria-live="polite"></p>
       ${isAdmin() ? `<fieldset style="border:1px solid rgba(255,255,255,.14);border-radius:8px;padding:10px 12px;display:flex;flex-direction:column;gap:8px;margin:0">
         <legend style="font-size:12px;color:#f2b632;padding:0 4px">Admin · give tokens</legend>
@@ -429,6 +437,12 @@
       if (r.error) { gm.className = 'qa-msg qa-err'; gm.textContent = /no_such_player/.test(r.error.message) ? 'No player has signed in with that email yet.' : 'The tokens could not be given. Try again.'; }
       else { gm.className = 'qa-msg'; gm.textContent = `Gave ${amt} tokens. They now have ${r.data}.`; }
     };
+    loadPurchases().then(rows => {
+      const box = $('#qa-hist'); if (!box || !rows.length) return;
+      box.hidden = false;
+      box.innerHTML = `<details class="qa-hist"><summary>Purchases (${rows.length})</summary><ul>${rows.map(r => `<li><span>${esc(new Date(r.created_at).toLocaleDateString())}</span><span>${r.tokens} tokens</span><span>${money(r.amount_cents)}${r.refunded_tokens ? ` · <em>${r.refunded_tokens >= r.tokens ? 'refunded' : r.refunded_tokens + ' refunded'}</em>` : ''}</span></li>`).join('')}</ul>
+        <p>Need a refund? See the <a href="${rootHref()}legal/refunds/">refund policy</a> or <a href="${rootHref()}contact/">contact us</a>.</p></details>`;
+    });
     $('[data-out]').onclick = async () => { await acct.client.auth.signOut(); acct.user = null; acct.wallet = null; acct.profile = null; emit(); m.close(); toast('Signed out. You are playing as a guest.'); };
     $('[data-cancel]').onclick = () => m.close();
     const buy = $('[data-buy]');
@@ -494,7 +508,7 @@
       <div class="qa-packs">${sh.packs.map(p => `<button type="button" class="qa-pack" data-pack="${esc(p.id)}">
         ${coinSVG(34)}<span class="qa-pk"><b>${p.tokens} tokens</b><small>${esc(p.name)}${p.tag ? ` · <em>${esc(p.tag)}</em>` : ''}</small></span><span class="qa-pr">${money(p.cents)}</span></button>`).join('')}</div>
       <p class="qa-msg" id="qa-shm" aria-live="polite"></p>
-      <p style="font-size:12px;color:#8f887a;margin:0">Payment is handled by Stripe. Quarter Alley never sees your card.</p>
+      <p style="font-size:12px;color:#8f887a;margin:0">Payment is handled by Stripe. Quarter Alley never sees your card. By buying you agree to the <a href="${rootHref()}legal/terms/" style="color:#cfc6b4">Terms of use</a>; see the <a href="${rootHref()}legal/refunds/" style="color:#cfc6b4">Refund policy</a>.</p>
       <div class="qa-row" style="justify-content:flex-start"><button type="button" class="qa-btn" data-cancel>Close</button></div></div>`);
     const el = m.el, msg = el.querySelector('#qa-shm');
     el.querySelector('[data-cancel]').onclick = () => m.close();
@@ -529,6 +543,29 @@
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', () => setTimeout(say, 600)); else setTimeout(say, 600);
   })();
 
+  async function loadPurchases() {
+    if (!signedIn()) return [];
+    try {
+      const { data, error } = await acct.client.from('purchases').select('created_at,pack,tokens,amount_cents,refunded_tokens').order('created_at', { ascending: false }).limit(20);
+      return error ? [] : data || [];
+    } catch (e) { return []; }
+  }
+  // Contact form → private inbox in Supabase (send_message). Throws Error('bad_email' | 'too_short' | 'slow_down' | 'offline' | 'failed').
+  async function sendMessage({ name, email, topic, body }) {
+    if (!acct.configured) throw new Error('offline');
+    let auth = CONFIG.supabaseAnonKey;
+    try { if (acct.client) { const { data } = await acct.client.auth.getSession(); if (data && data.session) auth = data.session.access_token; } } catch (e) {}
+    let r;
+    try {
+      r = await fetch(CONFIG.supabaseUrl + '/rest/v1/rpc/send_message', { method: 'POST', headers: { apikey: CONFIG.supabaseAnonKey, Authorization: 'Bearer ' + auth, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ p_name: name, p_email: email, p_topic: topic, p_body: body, p_page: location.pathname }) });
+    } catch (e) { throw new Error('offline'); }
+    if (r.ok) return true;
+    const j = await r.json().catch(() => ({}));
+    const code = ['bad_email', 'too_short', 'slow_down'].find(c => String(j.message || '').includes(c));
+    throw new Error(code || 'failed');
+  }
+
   /* ---------- toolbar ---------- */
   function chip() {
     const b = document.createElement('span'); b.className = 'qa-chip';
@@ -561,7 +598,8 @@
   setInterval(() => { if (signedIn() && !document.hidden) refreshAccount(); }, 120000);
 
   window.Arcade = {
-    insertCoin, tokens, reportBug, openShop, shopInfo, coinSVG, submitScore, topScores, signIn, accountMenu, toast,
+    insertCoin, tokens, reportBug, openShop, shopInfo, sendMessage,
+    get userEmail() { return (acct.user && acct.user.email) || ''; }, coinSVG, submitScore, topScores, signIn, accountMenu, toast,
     onChange: f => listeners.push(f),
     get freePlay() { return freePlay; }, get maxTokens() { return CAP; }, get refillMinutes() { return CONFIG.refillMinutes; },
     get isAdmin() { return isAdmin(); }, nextTokenIn, fmtTokens, fmtWait,

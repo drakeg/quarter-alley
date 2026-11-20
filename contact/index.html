@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Contact · Quarter Alley</title>
+<meta name="description" content="Questions about purchases, refunds, your account or sponsorship? Send Quarter Alley a message.">
+<link rel="icon" href="../assets/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bungee&family=Chivo:wght@400;600;700&display=swap">
+<link rel="stylesheet" href="../assets/doc.css">
+</head>
+<body>
+<main class="wrap">
+  <a class="back" href="../">← Back to the arcade</a>
+  <header>
+    <h1>Contact us</h1>
+    <p class="lede">Purchases, refunds, account questions or business inquiries. We usually reply within two business days.</p>
+  </header>
+  <p>Found a bug in a game? The <b>Report a bug</b> button at the top of every page is the fastest way to get it fixed.</p>
+
+  <form class="card" id="contact" novalidate>
+    <label>Your name<input name="name" autocomplete="name" maxlength="80" required></label>
+    <label>Email we can reply to<input name="email" type="email" autocomplete="email" maxlength="200" required></label>
+    <label>What is it about?
+      <select name="topic">
+        <option value="purchase">A purchase or refund</option>
+        <option value="account">My account (including deleting it)</option>
+        <option value="business">Sponsorship or business inquiry</option>
+        <option value="general" selected>General question</option>
+        <option value="bug">A problem with the site</option>
+        <option value="other">Something else</option>
+      </select>
+    </label>
+    <label>Message<textarea name="body" maxlength="4000" required placeholder="For purchases, include the date and the email you sign in with."></textarea></label>
+    <label class="hp" aria-hidden="true">Leave this empty<input name="website" tabindex="-1" autocomplete="off"></label>
+    <button type="submit" class="primary">Send message</button>
+    <p class="msg" id="msg" role="status" aria-live="polite"></p>
+  </form>
+
+  <nav class="legal-nav" aria-label="Policies">
+    <a href="../legal/terms/">Terms of use</a><a href="../legal/privacy/">Privacy</a><a href="../legal/refunds/">Refunds</a><a href="./">Contact</a>
+  </nav>
+</main>
+<script src="../assets/arcade.js"></script>
+<script>
+(() => {
+  const form = document.getElementById('contact'), msg = document.getElementById('msg');
+  const q = new URLSearchParams(location.search);
+  if (['purchase', 'account', 'business', 'general', 'bug', 'other'].includes(q.get('topic'))) form.topic.value = q.get('topic');
+  const fillEmail = () => { if (!form.email.value && Arcade.userEmail) form.email.value = Arcade.userEmail; };
+  fillEmail(); Arcade.onChange(fillEmail);
+  const say = (text, kind) => { msg.textContent = text; msg.className = 'msg ' + (kind || ''); };
+  const errors = {
+    bad_email: 'That email address doesn\'t look right.',
+    too_short: 'Please add a little more detail (at least 10 characters).',
+    slow_down: 'You\'ve sent several messages recently. Please try again in an hour.',
+    offline: 'Messages can\'t be sent right now. Check your connection and try again.',
+    failed: 'Something went wrong sending your message. Please try again.',
+  };
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    if (form.website.value) return; // filled only by bots
+    const data = { name: form.name.value.trim(), email: form.email.value.trim(), topic: form.topic.value, body: form.body.value.trim() };
+    if (!data.name) { say('Please enter your name.', 'err'); form.name.focus(); return; }
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(data.email)) { say(errors.bad_email, 'err'); form.email.focus(); return; }
+    if (data.body.length < 10) { say(errors.too_short, 'err'); form.body.focus(); return; }
+    const btn = form.querySelector('button'); btn.disabled = true; say('Sending…');
+    try {
+      await Arcade.sendMessage(data);
+      form.body.value = '';
+      say('Thanks! Your message was sent. We\'ll reply by email.', 'ok');
+    } catch (err) {
+      say(errors[err.message] || errors.failed, 'err');
+    } finally { btn.disabled = false; }
+  });
+})();
+</script>
+</body>
+</html>

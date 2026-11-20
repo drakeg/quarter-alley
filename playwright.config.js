@@ -16,6 +16,6 @@ module.exports = defineConfig({
   },
   projects: [
     { name: 'desktop', use: { ...devices['Desktop Chrome'] } },
-    { name: 'phone', use: { ...devices['Pixel 7'] }, testMatch: /site\.spec\.js/ },
+    { name: 'phone', use: { ...devices['Pixel 7'] }, testMatch: /(site|policies)\.spec\.js/ },
   ],
 });

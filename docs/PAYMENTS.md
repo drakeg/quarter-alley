@@ -22,7 +22,7 @@ Start in Stripe's **test mode** (the toggle at the top of the Stripe dashboard) 
 2. **Developers → API keys:** copy the **Secret key** (`sk_test_…`).
 3. **Developers → Webhooks → Add endpoint:**
    - Endpoint URL: `https://elnvjgphoptaycrneqso.supabase.co/functions/v1/stripe-webhook`
-   - Events: `checkout.session.completed` and `checkout.session.async_payment_succeeded`
+   - Events: `checkout.session.completed`, `checkout.session.async_payment_succeeded`, `charge.refunded` and `charge.dispute.created`
    - After saving, copy the endpoint's **Signing secret** (`whsec_…`).
 4. In Supabase, open the quarter-alley project → **Edge Functions → Secrets** and add:
    - `STRIPE_SECRET_KEY` = the secret key
@@ -45,6 +45,8 @@ Never put the Stripe secret key or the Supabase service_role key in the site or 
 | Pack list and Stripe Checkout session | `supabase/functions/shop` |
 | Payment notice from Stripe, adds the tokens | `supabase/functions/stripe-webhook` |
 | Purchase ledger and `credit_purchase()` | `supabase/payments.sql` |
+| Refund tracking, `refund_purchase()`, contact inbox | `supabase/support.sql` |
+| Policy and contact pages | `legal/`, `contact/` |
 
 1. The player picks a pack. The site asks the `shop` function, which checks who is signed in and opens a Stripe Checkout page with the server's price.
 2. The player pays on Stripe's page. Quarter Alley never sees card details.
@@ -52,4 +54,8 @@ Never put the Stripe secret key or the Supabase service_role key in the site or 
 4. Each Checkout session can only be credited once, so if Stripe re-sends a notice, nobody gets double tokens.
 5. Players can read their own purchases; only the server can write them.
 
-Refunds made in Stripe don't remove tokens automatically. If that matters later, add `charge.refunded` to the webhook.
+**Refunds and disputes:** when you refund a purchase in Stripe (fully or partly), or a buyer disputes the charge, the webhook calls `refund_purchase()`, which takes back tokens in proportion to the money returned (never below zero). Stripe sends the running refund total, so repeated notices don't take tokens twice. Players see refunds in their purchase history.
+
+**Policies:** Terms, Privacy and Refund policy pages are at `legal/terms/`, `legal/privacy/` and `legal/refunds/`, linked from the home page footer and the shop. Stripe asks for these during account activation. Review them before going live; they are a plain-language starting point, not legal advice.
+
+**Support inbox:** the contact page saves messages to the `messages` table (Supabase → Table Editor → messages). Nobody but the project owner can read it. Each email address can send 3 messages an hour and the whole site 60, which keeps spam down.
