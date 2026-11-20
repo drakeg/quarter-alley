@@ -1,0 +1,16 @@
+title: "Questions and help"
+body:
+  - type: markdown
+    attributes:
+      value: "Ask about gameplay, accounts, tokens, or contributing. Never post passwords, payment details, API keys, or private account information."
+  - type: textarea
+    id: question
+    attributes:
+      label: Your question
+    validations:
+      required: true
+  - type: textarea
+    id: context
+    attributes:
+      label: Context (optional)
+      description: Game name, device/browser, and steps already tried. Use private support for account-specific issues.
