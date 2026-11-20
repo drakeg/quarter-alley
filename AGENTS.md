@@ -43,3 +43,7 @@ Report test failures accurately; never mark a check as passing without running i
 
 - Schema changes go in `supabase/*.sql` (safe to re-run) and are applied to the `quarter-alley` Supabase project as a migration.
 - Edge Functions live in `supabase/functions/<name>/index.ts` and are deployed from there. `stripe-webhook` must stay deployed with JWT checks off; it verifies Stripe's signature instead.
+
+## PR merging
+
+Repository-owned, non-draft PRs are eligible for automatic squash merge through `.github/workflows/merge-after-checks.yml` after the CI site/browser, Docker Compose, standards and CodeQL jobs all succeed for the exact head commit. The trusted workflow never checks out or runs PR code with write permissions. Failing, pending, conflicting, fork-origin and draft PRs are not merged. GitHub branch protections still apply. Do not mark PRs merged until GitHub confirms the merge.
