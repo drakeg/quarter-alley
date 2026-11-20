@@ -11,7 +11,7 @@ Every game is an original design with its own name, characters and art. Never us
 | P0 | Mad Mallard standards: docs, CI, tests, Docker Compose, badges | 1 | ✅ Done (#2) |
 | P0 | Terms, Privacy and Refund policy pages + contact route in the footer (needed for Stripe activation) | 2 | In review |
 | P0 | Owner: review the policy pages (plain-language drafts, not legal advice) | 2 | Waiting on owner |
-| P0 | Owner: publish the v1.0.0 GitHub release | 1 | Waiting on owner |
+| P0 | Owner: publish the v1.0.0 GitHub release | 1 | ✅ Done |
 | P0 | Owner: set Site URL and redirect URLs in Supabase (Authentication → URL Configuration, `docs/LOGIN.md` step 2) | 2 | Waiting on owner |
 | P0 | Owner: connect Stripe in test mode (`STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, see `docs/PAYMENTS.md`) | 2 | Waiting on owner |
 | P0 | Owner: confirm the admin account's email so admin rights can be granted in Supabase | 2 | Waiting on owner |
