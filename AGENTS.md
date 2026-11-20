@@ -6,7 +6,7 @@ Applies to people and AI agents working in this repository. Follows the [Mad Mal
 
 1. Read README, [SPRINTS.md](SPRINTS.md), [BACKLOG.md](BACKLOG.md), [CONTRIBUTING.md](CONTRIBUTING.md), [RELEASES.md](RELEASES.md), [SECURITY.md](SECURITY.md) and the workflows in `.github/workflows/`.
 2. Tie the change to the current sprint or a backlog item. Urgent fixes may go first, then get recorded.
-3. Work on a branch and open a pull request. `main` deploys straight to GitHub Pages, so nothing lands there without passing CI and a human review.
+3. Work on a branch and open a pull request. `main` deploys straight to GitHub Pages, so changes should pass CI before merging; a separate human review is optional unless explicitly required by repository protections.
 
 ## Project rules (non-negotiable)
 
