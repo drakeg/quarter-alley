@@ -13,7 +13,7 @@ Please **don't** post credentials, personal data or working exploits in public i
 
 ## Automation
 
-Workflows run with read-only permissions (CodeQL additionally writes security alerts). Fork pull requests never receive secrets. Dependabot proposes updates to actions and test packages; review them like any other change.
+Workflows run with read-only permissions (CodeQL additionally writes security alerts). Fork pull requests never receive secrets. Renovate (`renovate.json`) proposes updates to actions, test packages and the Docker test image; review them like any other change. GitHub's Dependabot security alerts stay on.
 
 ## Supported versions
 

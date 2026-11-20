@@ -23,7 +23,7 @@ Sprints run one after another; scope changes go through the backlog. Each sprint
 - [x] AGENTS, CONTRIBUTING, SECURITY, SPRINTS, BACKLOG, RELEASES; roadmap moved from TODO.md into BACKLOG.md
 - [x] Static checks: script syntax, game registration, leaked-secret scan
 - [x] Browser tests: every game boots and survives input; hub, leaderboards and coin slot on desktop and phone
-- [x] GitHub Actions CI, CodeQL, Dependabot, PR template
+- [x] GitHub Actions CI, CodeQL, dependency updates (Renovate), PR template
 - [x] Docker Compose test server reachable on the LAN, plus a containerized test run
 - [x] Accurate, dynamic README badges
 - [x] Merged after review ([#2](https://github.com/drakeg/quarter-alley/pull/2))

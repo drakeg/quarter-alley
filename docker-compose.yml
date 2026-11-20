@@ -18,7 +18,7 @@ services:
 
   tests:
     profiles: ["test"]
-    image: mcr.microsoft.com/playwright:v1.63.0-noble
+    image: mcr.microsoft.com/playwright:v1.65.1-noble
     working_dir: /work
     volumes:
       - ./:/work

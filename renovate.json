@@ -1,6 +1,16 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "extends": [
-    "config:recommended"
+  "extends": ["config:recommended"],
+  "packageRules": [
+    {
+      "description": "three must match the r128 build Ridgeline loads from the CDN; newer versions also drop build/three.min.js, which the tests serve.",
+      "matchPackageNames": ["three"],
+      "enabled": false
+    },
+    {
+      "description": "The npm test runner and the Docker test image must move together, or the containerized test run can't find its browser.",
+      "matchPackageNames": ["@playwright/test", "mcr.microsoft.com/playwright"],
+      "groupName": "playwright"
+    }
   ]
 }
