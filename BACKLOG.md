@@ -6,6 +6,11 @@ Every game is an original design with its own name, characters and art. Never us
 
 ## Platform and revenue
 
+| P1 | Configure GitHub Discussions templates, category guidance and community links | 2 | In progress |
+| P1 | Verify GitHub Sponsors payout profile and add an approved funding destination (FUNDING.yml) | 2 | Waiting on verified sponsor URL |
+| P1 | Plan sponsorship recognition without promising unimplemented paid features | Later | Planned |
+
+
 | Priority | Item | Sprint | Status |
 |---|---|---|---|
 | P0 | Mad Mallard standards: docs, CI, tests, Docker Compose, badges | 1 | ✅ Done (#2) |
