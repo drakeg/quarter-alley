@@ -9,7 +9,7 @@ Bug reports, game ideas and pull requests are welcome, including AI-authored one
 3. Follow [AGENTS.md](AGENTS.md), especially the originality rule: no names, characters or catchphrases from existing games, films, shows or brands, anywhere.
 4. Run `npm test` (static checks plus browser tests). Add or update tests when behavior changes.
 5. Open a pull request using the template: link the sprint or backlog item, say what changed, how you tested it, the risk and how to roll back.
-6. CI must pass and a human must review before a squash merge. Merging to `main` publishes the site.
+6. CI must pass before merging. A separate human Review action is not required by project policy; repository branch protections, if any, still apply. Merging to `main` publishes the site.
 
 ## Definition of Ready
 
