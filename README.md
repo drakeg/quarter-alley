@@ -137,7 +137,7 @@ Every game here is an original design: its own name, characters, story and art. 
 
 Every game start goes through `Arcade.insertCoin(callback)` in `assets/arcade.js`, which shows the coin-slot screen and spends one token.
 
-- Every player holds up to 30 free tokens, and one comes back every 10 minutes until they're full again. Each page shows when the next one arrives.
+- Guests hold up to **2** free tokens; one returns every 10 minutes. Signed-in wallets currently retain the legacy server cap of 30 until the planned five-free-token SQL migration is deployed. Each page shows when the next one arrives.
 - Admins (set in the database, see `docs/LOGIN.md`) play free and can give tokens to other players.
 - Settings are at the top of `assets/arcade.js` (`maxTokens`, `refillMinutes`, `freePlay`). Keep them in step with the numbers in `supabase/schema.sql`.
 - Add `?freeplay` to any game URL to test without spending tokens.
@@ -155,7 +155,7 @@ To gate a new game, include the script and wrap its start:
 
 ## Accounts and leaderboards
 
-Players can sign in with an email link, Google or GitHub. Signed-in players' tokens live on the server and their scores go to the [leaderboards](leaderboards/). Every new player starts with their own wallet of 30 tokens. Guests still play with tokens saved in their browser. Setup notes are in [docs/LOGIN.md](docs/LOGIN.md). Games report scores with `Arcade.submitScore(score)` at game over.
+Players can sign in with an email link, Google or GitHub. Signed-in players' tokens live on the server and their scores go to the [leaderboards](leaderboards/). New signed-in players currently start with 30 tokens on the server; the approved five-free-token migration is pending. Guests still play with tokens saved in their browser. Setup notes are in [docs/LOGIN.md](docs/LOGIN.md). Games report scores with `Arcade.submitScore(score)` at game over.
 
 ## Community and sponsorships
 
