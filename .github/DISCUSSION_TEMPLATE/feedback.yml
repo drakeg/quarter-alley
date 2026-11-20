@@ -1,0 +1,24 @@
+title: "Player feedback"
+body:
+  - type: dropdown
+    id: area
+    attributes:
+      label: Feedback area
+      options:
+        - Game balance
+        - Touch or keyboard controls
+        - Token economy
+        - Accessibility
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: feedback
+    attributes:
+      label: What should improve?
+    validations:
+      required: true
+  - type: textarea
+    id: impact
+    attributes:
+      label: How would this improve the experience?
