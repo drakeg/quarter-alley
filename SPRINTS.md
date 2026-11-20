@@ -43,7 +43,7 @@ Sprints run one after another; scope changes go through the backlog. Each sprint
 - [x] Purchase history in the account menu
 - [x] Tests: policy pages, contact form, purchase history; static check for broken links
 - [ ] Owner steps: Supabase URL configuration, connect Stripe in test mode, confirm the admin email, custom email sender, review the policy pages
-- [ ] Owner decision: free-tier settings that make buying worthwhile (see BACKLOG)
+- [x] Owner decision: guest 2, registered 5, paid 5 + purchased credits, admin unlimited\n- [ ] Implement and verify separated free/bonus token balances and persistent paid status (see docs/TOKEN-TIERS.md)
 
 **Acceptance:** A test-mode purchase on the live site credits tokens; a refund removes them; the policy pages are live.
 
