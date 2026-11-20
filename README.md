@@ -1,6 +1,14 @@
 # Quarter Alley Arcade
 
-A static website of original retro-style browser games. No build step, no server code, no database: just HTML files.
+<!-- madmallard-badges:start -->
+![Docker](https://img.shields.io/badge/Docker-2496ED?logo=docker&logoColor=white) ![Docker Compose](https://img.shields.io/badge/Docker%20Compose-2496ED?logo=docker&logoColor=white) ![JavaScript](https://img.shields.io/badge/JavaScript-F7DF1E?logo=javascript&logoColor=white)
+
+[![ci](https://github.com/drakeg/quarter-alley/actions/workflows/ci.yml/badge.svg)](https://github.com/drakeg/quarter-alley/actions/workflows/ci.yml) [![codeql](https://github.com/drakeg/quarter-alley/actions/workflows/codeql.yml/badge.svg)](https://github.com/drakeg/quarter-alley/actions/workflows/codeql.yml) [![License](https://img.shields.io/github/license/drakeg/quarter-alley)](https://github.com/drakeg/quarter-alley/blob/HEAD/LICENSE) [![Issues](https://img.shields.io/github/issues/drakeg/quarter-alley)](https://github.com/drakeg/quarter-alley/issues) [![Pull requests](https://img.shields.io/github/issues-pr/drakeg/quarter-alley)](https://github.com/drakeg/quarter-alley/pulls)
+<!-- madmallard-badges:end -->
+
+[![Pages deploy](https://github.com/drakeg/quarter-alley/actions/workflows/pages/pages-build-deployment/badge.svg)](https://github.com/drakeg/quarter-alley/actions/workflows/pages/pages-build-deployment) [![Live site](https://img.shields.io/website?url=https%3A%2F%2Fdrakeg.github.io%2Fquarter-alley%2F&label=live%20site)](https://drakeg.github.io/quarter-alley/) [![Last commit](https://img.shields.io/github/last-commit/drakeg/quarter-alley)](https://github.com/drakeg/quarter-alley/commits/main) [![Commit activity](https://img.shields.io/github/commit-activity/m/drakeg/quarter-alley)](https://github.com/drakeg/quarter-alley/pulse) ![HTML5](https://img.shields.io/badge/HTML5%20Canvas-E34F26?logo=html5&logoColor=white) ![Supabase](https://img.shields.io/badge/Supabase-3FCF8E?logo=supabase&logoColor=white) ![Deno](https://img.shields.io/badge/Edge%20Functions-Deno-000000?logo=deno&logoColor=white) ![Stripe](https://img.shields.io/badge/Stripe-Checkout-635BFF?logo=stripe&logoColor=white) ![Playwright](https://img.shields.io/badge/Tests-Playwright-2EAD33?logo=playwright&logoColor=white)
+
+A website of original retro-style browser games, live at **[drakeg.github.io/quarter-alley](https://drakeg.github.io/quarter-alley/)**. The site is plain HTML with no build step; accounts, wallets, leaderboards and the token shop run on Supabase, and payments on Stripe.
 
 ## Games
 
@@ -68,19 +76,36 @@ quarter-alley/
 ├── supabase/functions/               ← shop + stripe-webhook (Edge Functions)
 ├── docs/LOGIN.md                     ← how to switch on accounts
 ├── docs/PAYMENTS.md                  ← how to connect Stripe for the token shop
-└── TODO.md                           ← roadmap
+├── tests/                            ← static checks + browser tests (npm test)
+├── docker-compose.yml                ← LAN test server and containerized tests
+└── AGENTS.md · CONTRIBUTING.md · SPRINTS.md · BACKLOG.md · RELEASES.md · SECURITY.md
 ```
 
 ## Try it locally
 
-Opening `index.html` directly works, but a local server behaves exactly like real hosting:
+Opening `index.html` directly works, but a local server behaves exactly like real hosting.
 
-```
-cd quarter-alley
-python3 -m http.server 8000
+**Docker Compose (recommended, reachable from your phone on the same Wi-Fi):**
+
+```bash
+docker compose up -d
 ```
 
-Then visit http://localhost:8000
+Open http://localhost:8080 on this computer, or `http://<this computer's LAN IP>:8080` on a phone or tablet (on a Mac: `ipconfig getifaddr en0`). Edits show up on refresh. Use `QA_PORT=9000 docker compose up -d` for another port, and `docker compose down` to stop.
+
+**Without Docker:** `npm run serve` (or `python3 -m http.server 8080 --bind 0.0.0.0`).
+
+## Testing
+
+```bash
+npm ci
+npm test                                      # static checks + browser tests
+docker compose --profile test run --rm tests  # same browser tests, inside Docker, against the Compose server
+```
+
+- `npm run lint` checks every page's scripts compile, every game is wired to the coin slot and registered on the hub, leaderboards and bug form, and that no secret keys are in the site.
+- `npm run e2e` (Playwright) boots every game and plays it for a few seconds with no script errors, and checks the hub, leaderboards and coin slot on desktop and phone. Tests run offline: accounts are skipped and libraries are served locally.
+- GitHub Actions runs all of this, a Docker Compose check, the Mad Mallard standards check and CodeQL on every pull request.
 
 ## Put it on the web
 
@@ -129,9 +154,9 @@ To gate a new game, include the script and wrap its start:
 
 Players can sign in with an email link, Google or GitHub. Signed-in players' tokens live on the server and their scores go to the [leaderboards](leaderboards/). Every new player starts with their own wallet of 30 tokens. Guests still play with tokens saved in their browser. Setup notes are in [docs/LOGIN.md](docs/LOGIN.md). Games report scores with `Arcade.submitScore(score)` at game over.
 
-## Roadmap
+## Roadmap and contributing
 
-See [TODO.md](TODO.md).
+Current sprint and plan: [SPRINTS.md](SPRINTS.md). Prioritized work: [BACKLOG.md](BACKLOG.md). Releases: [RELEASES.md](RELEASES.md). How to contribute: [CONTRIBUTING.md](CONTRIBUTING.md) and [AGENTS.md](AGENTS.md). Security: [SECURITY.md](SECURITY.md).
 
 ## Bug reports
 
