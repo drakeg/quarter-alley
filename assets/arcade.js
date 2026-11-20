@@ -9,7 +9,8 @@
 (() => {
   'use strict';
   const CONFIG = {
-    maxTokens: 30,        // free tokens refill up to this many (also what a new player starts with)
+    maxTokens: 30,        // legacy authenticated server cap until the five-token SQL migration is deployed
+    guestMaxTokens: 2,     // guests can hold up to two free tokens
     refillMinutes: 10,    // one free token comes back every this many minutes, up to maxTokens
     freePlay: false,      // true = no tokens needed anywhere (also: add ?freeplay to a URL)
     repo: 'drakeg/quarter-alley',
@@ -25,24 +26,25 @@
   const emit = () => listeners.forEach(f => { try { f(tokens()); } catch (e) {} });
 
   /* ---------- local (guest) wallet ---------- */
-  const CAP = CONFIG.maxTokens, REFILL = CONFIG.refillMinutes * 60000;
+  const CAP = CONFIG.maxTokens, GUEST_CAP = CONFIG.guestMaxTokens, REFILL = CONFIG.refillMinutes * 60000;
   let mem = null;
   // Tokens refill one at a time: every REFILL ms, up to CAP. Above CAP (gifts, purchases) nothing is added.
-  function regen(tokens, last, now) {
-    if (tokens >= CAP) return { tokens, last: now };
+  function regen(tokens, last, now, cap = CAP) {
+    if (tokens >= cap) return { tokens, last: now };
     const gained = Math.floor((now - last) / REFILL);
     if (gained <= 0) return { tokens, last };
-    const t = Math.min(CAP, tokens + gained);
-    return { tokens: t, last: t >= CAP ? now : last + gained * REFILL };
+    const t = Math.min(cap, tokens + gained);
+    return { tokens: t, last: t >= cap ? now : last + gained * REFILL };
   }
   function read() {
     let w = null;
     try { w = JSON.parse(localStorage.getItem(KEY)); } catch (e) {}
     if (!w && mem) w = mem;
     const now = Date.now();
-    if (!w || typeof w.tokens !== 'number') w = { tokens: CAP, last: now, played: 0 };
-    if (typeof w.last !== 'number') { w.tokens = Math.max(w.tokens, CAP); w.last = now; delete w.day; } // wallets from the old daily system get a full refill
-    const r = regen(w.tokens, w.last, now); w.tokens = r.tokens; w.last = r.last;
+    if (!w || typeof w.tokens !== 'number') w = { tokens: GUEST_CAP, last: now, played: 0 };
+    if (typeof w.last !== 'number') { w.tokens = Math.max(w.tokens, GUEST_CAP); w.last = now; delete w.day; } // wallets from the old daily system get a full refill
+    w.tokens = Math.min(GUEST_CAP, Math.max(0, w.tokens));
+    const r = regen(w.tokens, w.last, now, GUEST_CAP); w.tokens = r.tokens; w.last = r.last;
     return w;
   }
   function write(w) { mem = w; try { localStorage.setItem(KEY, JSON.stringify(w)); } catch (e) {} emit(); }
@@ -63,7 +65,7 @@
     if (freePlay || isAdmin()) return null;
     let t, last;
     if (signedIn() && acct.wallet) { const w = serverWallet(); t = w.tokens; last = w.last; } else { const w = read(); t = w.tokens; last = w.last; }
-    return t >= CAP ? null : Math.max(0, last + REFILL - Date.now());
+    return t >= (signedIn() ? CAP : GUEST_CAP) ? null : Math.max(0, last + REFILL - Date.now());
   }
   const fmtTokens = n => n === Infinity ? '∞' : String(n);
   const fmtWait = ms => { const s = Math.ceil(ms / 1000); return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); };
@@ -572,7 +574,7 @@
     const upd = () => {
       const n = tokens(), wait = nextTokenIn();
       b.innerHTML = `${coinSVG(20)}<span>${freePlay ? 'Free play' : n === Infinity ? '∞ Admin' : n + ' token' + (n === 1 ? '' : 's')}</span>`;
-      b.title = n === Infinity ? 'Admin account: unlimited tokens' : wait === null ? `Full. You hold up to ${CAP} free tokens.` : `Next free token in ${fmtWait(wait)}. One comes back every ${CONFIG.refillMinutes} minutes, up to ${CAP}.`;
+      b.title = n === Infinity ? 'Admin account: unlimited tokens' : wait === null ? `Full. You hold up to ${signedIn() ? CAP : GUEST_CAP} free tokens.` : `Next free token in ${fmtWait(wait)}. One comes back every ${CONFIG.refillMinutes} minutes, up to ${signedIn() ? CAP : GUEST_CAP}.`;
     };
     upd(); listeners.push(upd); return b;
   }
