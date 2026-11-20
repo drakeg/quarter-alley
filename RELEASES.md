@@ -10,18 +10,18 @@ Quarter Alley uses [Semantic Versioning](https://semver.org) for tagged GitHub r
 
 **Release checklist:** changes reviewed and merged · CI green on `main` · no secrets or protected names · badges accurate · SPRINTS and BACKLOG updated · release notes below · tag `vX.Y.Z` and publish a GitHub release with the same notes.
 
-## Unreleased → planned v1.1.0
+## Unreleased
 
-- Terms of use, Privacy and Refund policy pages; contact page with a private inbox
-- Refunds and disputes in Stripe take back tokens automatically
-- Purchase history in the account menu
-- Broken-link check in the static tests
+Nothing yet.
 
-## v1.0.0 — 2026-11-20 (tag pending)
+## [v1.0.0](https://github.com/drakeg/quarter-alley/releases/tag/v1.0.0) — 2026-11-20
 
-First release, from `main` at the merge of #2. The GitHub release itself still needs publishing by the owner.
+First tagged release, cut from `main` after #12.
 
 - 24 original games, playable on desktop and phone, with gamepad and touch support where it fits
 - Token wallet and coin slot; sign-in with server-side wallets, admins and leaderboards
 - Token shop on Stripe Checkout (hidden until Stripe is connected)
-- Quality gates: static checks, browser tests for every game, CI, CodeQL, Docker Compose test server
+- Terms of use, Privacy and Refund policy pages; contact page with a private inbox (#8)
+- Refunds and disputes in Stripe take back tokens automatically; purchase history in the account menu (#8)
+- Quality gates: static checks with a broken-link check, browser tests for every game, CI, CodeQL, Docker Compose test server (#2)
+- Renovate for dependency updates; Playwright 1.65.1 (#12)

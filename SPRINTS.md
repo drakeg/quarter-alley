@@ -27,7 +27,7 @@ Sprints run one after another; scope changes go through the backlog. Each sprint
 - [x] Docker Compose test server reachable on the LAN, plus a containerized test run
 - [x] Accurate, dynamic README badges
 - [x] Merged after review ([#2](https://github.com/drakeg/quarter-alley/pull/2))
-- [ ] Publish the **v1.0.0** GitHub release (owner: this session can't create releases)
+- [x] Published the [v1.0.0](https://github.com/drakeg/quarter-alley/releases/tag/v1.0.0) release
 
 **Outcome:** CI, CodeQL, standards and Docker Compose checks green on `main`.
 
