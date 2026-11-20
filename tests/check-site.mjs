@@ -71,8 +71,20 @@ for (const d of extra.filter((d) => d !== 'leaderboards')) {
 // 4b. Every relative link, script, stylesheet and icon in page markup points at something that exists.
 for (const page of pages) {
   const dir = page.slice(0, page.lastIndexOf('/') + 1);
-  const markup = read(page).replace(/<script(\s[^>]*)?>[\s\S]*?<\/script>/gi, (m, a) => (a && /\bsrc=/.test(a) ? `<script${a}>` : ''));
-  for (const [, url] of markup.matchAll(/\s(?:href|src)=["']([^"'#?]*)[^"']*["']/g)) {
+  const html = read(page);
+  // Script bodies hold JS strings, not markup: note where they are and skip links found inside them.
+  const bodies = [];
+  const openTag = /<script\b[^>]*>/gi;
+  for (let m; (m = openTag.exec(html));) {
+    const start = m.index + m[0].length;
+    const end = html.toLowerCase().indexOf('</script', start);
+    bodies.push([start, end < 0 ? html.length : end]);
+    openTag.lastIndex = end < 0 ? html.length : end;
+  }
+  const inBody = (i) => bodies.some(([s, e]) => i >= s && i < e);
+  for (const m of html.matchAll(/\s(?:href|src)=["']([^"'#?]*)[^"']*["']/g)) {
+    if (inBody(m.index)) continue;
+    const url = m[1];
     if (!url || /^(?:[a-z]+:|\/\/|\$\{)/i.test(url)) continue;
     const target = join(root, dir, url);
     const ok = url.endsWith('/') ? existsSync(join(target, 'index.html')) : existsSync(target);
