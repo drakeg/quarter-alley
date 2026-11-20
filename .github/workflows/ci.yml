@@ -1,0 +1,68 @@
+name: CI
+on:
+  push:
+    branches: [main]
+  pull_request:
+permissions:
+  contents: read
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Site checks and browser tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - name: Static checks (syntax, registration, secrets)
+        run: npm run lint
+      - run: npx playwright install --with-deps chromium
+      - name: Browser tests (every game, desktop and phone)
+        run: npx playwright test
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 7
+
+  compose:
+    name: Docker Compose environment
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker compose up -d --wait web
+      - name: Site is served
+        run: |
+          for p in / games/brickwave/ leaderboards/ assets/arcade.js; do
+            code=$(curl -s -o /dev/null -w '%{http_code}' "http://localhost:8080/$p"); echo "$p $code"; test "$code" = 200
+          done
+          test "$(curl -s -o /dev/null -w '%{http_code}' http://localhost:8080/.git/config)" = 403
+      - if: always()
+        run: docker compose down
+
+  standards:
+    name: Mad Mallard standards
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          repository: drakeg/madmallard-repository-standards
+          ref: 5c43391e7a6860cf9691b45758ee9003f9f0222f   # pinned; bump deliberately
+          path: .standards
+      - name: Required docs present
+        run: python3 .standards/scripts/audit.py --repo . --check
+      - name: README badges have no drift
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python3 .standards/scripts/badges.py --repo . --mode check

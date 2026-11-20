@@ -1,0 +1,19 @@
+{
+  "name": "quarter-alley",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Original retro-style browser arcade. Static site; these packages are for testing only.",
+  "license": "MIT",
+  "repository": { "type": "git", "url": "https://github.com/drakeg/quarter-alley.git" },
+  "homepage": "https://drakeg.github.io/quarter-alley/",
+  "scripts": {
+    "serve": "python3 -m http.server 8080 --bind 0.0.0.0",
+    "lint": "node tests/check-site.mjs",
+    "e2e": "playwright test",
+    "test": "npm run lint && npm run e2e"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.63.0",
+    "three": "0.128.0"
+  }
+}
