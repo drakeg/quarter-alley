@@ -44,6 +44,7 @@ Sprints run one after another; scope changes go through the backlog. Each sprint
 - [x] Tests: policy pages, contact form, purchase history; static check for broken links
 - [ ] Owner steps: Supabase URL configuration, connect Stripe in test mode, confirm the admin email, custom email sender, review the policy pages
 - [x] Owner decision: guest 2, registered 5, paid 5 + purchased credits, admin unlimited
+- [x] Limit guest browser wallets to 2 free tokens (existing guest balances above 2 are capped)
 - [ ] Implement and verify separated free/bonus token balances and persistent paid status (see docs/TOKEN-TIERS.md)
 
 **Acceptance:** A test-mode purchase on the live site credits tokens; a refund removes them; the policy pages are live.
