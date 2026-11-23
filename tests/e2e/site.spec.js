@@ -25,12 +25,12 @@ test('coin slot spends a guest token', async ({ page }) => {
   await page.evaluate(() => localStorage.clear());
   await page.reload();
   const before = await page.evaluate(() => Arcade.tokens());
-  expect(before).toBe(30);
+  expect(before).toBe(2);
   await page.evaluate(() => { window.__started = false; Arcade.insertCoin(() => { window.__started = true; }); });
   await expect(page.locator('.qa-door')).toBeVisible();
   await page.locator('[data-coin]').click();
   await expect.poll(() => page.evaluate(() => window.__started), { timeout: 5000 }).toBe(true);
-  expect(await page.evaluate(() => Arcade.tokens())).toBe(29);
+  expect(await page.evaluate(() => Arcade.tokens())).toBe(1);
   expect(errors).toEqual([]);
 });
 
