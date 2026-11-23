@@ -12,6 +12,8 @@ Quarter Alley uses [Semantic Versioning](https://semver.org) for tagged GitHub r
 
 ## Unreleased
 
+- Back It In: an original campsite parking cabinet with three courses, articulated trailer physics, keyboard/touch/gamepad controls, and leaderboard scoring (pending CI).
+
 - Guest wallets use a two-token cap (#19, merged).
 - Tiered signed-in wallets (five regenerating free tokens, separate bonus credits, persistent paid status and refund debt) are being developed and tested; **not yet deployed**.
 - Expanded PostgreSQL wallet lifecycle coverage in CI (#21).

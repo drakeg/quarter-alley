@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="description" content="Back It In: reverse your fifth wheel into a tight campsite without hitting trees, boulders or the lawn-chair crowd.">
+<title>Back It In · Quarter Alley</title>
+<link rel="icon" href="../../assets/favicon.svg" type="image/svg+xml">
+<style>
+:root{color-scheme:dark;font-family:system-ui,"Segoe UI",sans-serif;background:#121c22;color:#f3ecd9}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(ellipse at top,#263e45,#121c22 70%)}
+.wrap{width:min(100%,1100px);margin:auto;padding:16px max(16px,env(safe-area-inset-right)) 40px}
+a{color:#f6d88b}.back{font-size:13px;text-decoration:none}
+h1{font:900 clamp(28px,6vw,52px)/1.05 system-ui;margin:12px 0 8px;letter-spacing:.045em;color:#ffc56a;text-shadow:0 4px #713e27}
+p{line-height:1.45;color:#c4d1cc}main{display:grid;grid-template-columns:minmax(0,720px) minmax(240px,1fr);gap:24px;align-items:start}
+.screen{border:10px solid #5e4632;border-radius:18px;box-shadow:0 8px 0 #342719,0 25px 65px #0008;overflow:hidden;background:#254e43;min-width:0}
+canvas{width:100%;display:block;aspect-ratio:720/520;touch-action:none}
+.panel{border:1px solid #45635d;border-radius:14px;padding:18px;background:#192a2b}
+.tag{font-size:12px;text-transform:uppercase;letter-spacing:.17em;color:#ffce7c}
+.score{display:flex;gap:16px;flex-wrap:wrap;font-weight:800;font-size:17px;margin:12px 0 18px}
+.score span{color:#ffce7c}button{font:800 15px system-ui;cursor:pointer;border-radius:9px;border:1px solid #e0bd74;background:#ffc56a;color:#2a1c12;padding:11px 17px;touch-action:none}
+button:focus-visible,a:focus-visible{outline:3px solid #fff;outline-offset:3px}
+button.secondary{background:#294b4b;color:#fff;border-color:#789a91}
+button:disabled{opacity:.55;cursor:not-allowed}
+.controls{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;max-width:300px;margin:16px 0 8px}
+.controls [data-hold=forward]{grid-column:2}.controls [data-hold=left]{grid-column:1}.controls [data-hold=right]{grid-column:3}
+.controls [data-hold=reverse]{grid-column:2}.controls button{min-height:52px;font-size:21px;user-select:none}
+.controls .held{background:#fff1c2}
+.legend{font-size:13px;color:#c4d1cc}.status{min-height:3.6em;color:#ffcc79;font-weight:650}
+@media(max-width:790px){main{grid-template-columns:1fr}.screen{border-width:7px}.panel{padding:14px}.controls{max-width:100%}}
+@media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;animation:none!important}}
+</style>
+</head>
+<body><div class="wrap">
+<a class="back" href="../../">← Back to the arcade</a>
+<header><h1>BACK IT IN</h1><p>Three campsites. One fifth wheel. A very judgmental lawn-chair crowd.</p></header>
+<main>
+<div class="screen"><canvas id="game" width="720" height="520" aria-label="Top-down fifth-wheel parking course with trees and a highlighted campsite"></canvas></div>
+<aside class="panel">
+<div class="tag">Campground challenge</div>
+<div class="score">Site <span id="level">1 / 3</span> · Points <span id="score">0</span></div>
+<p class="status" id="status" role="status" aria-live="polite">Use your steering and reverse gear to park the trailer inside the glowing campsite. Press Start to insert one token.</p>
+<div class="controls" aria-label="Vehicle controls">
+<button type="button" data-hold="forward" aria-label="Drive forward">▲</button>
+<button type="button" data-hold="left" aria-label="Steer left">◀</button>
+<button type="button" data-hold="right" aria-label="Steer right">▶</button>
+<button type="button" data-hold="reverse" aria-label="Reverse">▼</button>
+</div>
+<p class="legend">Keyboard: ↑/↓ to drive, ←/→ to steer (WASD works too). Touch and hold the arrow buttons. A controller's left stick steers, and triggers move. Reverse is intentionally tricky.</p>
+<div style="display:flex;gap:9px;flex-wrap:wrap;margin-top:14px">
+<button id="start" type="button">Insert token · Start</button>
+<button id="reset" class="secondary" type="button" disabled>Retry site</button>
+</div>
+<p class="legend">Park the entire trailer in the lit pad, facing the guide arrow, and stop moving. Collisions and pull-throughs cost points. Three clean sites complete the run.</p>
+</aside></main>
+</div>
+<script src="../../assets/arcade.js"></script>
+<script>
+(() => {
+'use strict';
+const canvas=document.querySelector('#game'),ctx=canvas.getContext('2d');
+const status=document.querySelector('#status'),scoreEl=document.querySelector('#score'),levelEl=document.querySelector('#level');
+const START=document.querySelector('#start'),RESET=document.querySelector('#reset');
+const W=720,H=520;
+const sites=[
+ {bay:{x:95,y:115,w:90,h:174,a:-Math.PI/2},trees:[[85,65],[304,107],[317,385],[85,408]],rocks:[[445,132],[492,400]],crowd:[[204,82],[227,82]]},
+ {bay:{x:100,y:290,w:90,h:174,a:-Math.PI/2},trees:[[91,81],[290,87],[294,425],[130,480]],rocks:[[390,170],[455,370]],crowd:[[220,440],[240,450]]},
+ {bay:{x:118,y:122,w:90,h:170,a:-Math.PI/2},trees:[[80,73],[315,64],[328,351],[99,450]],rocks:[[410,114],[475,427],[351,260]],crowd:[[217,89],[239,88],[255,107]]}
+];
+const input={left:false,right:false,forward:false,reverse:false};
+const truck={x:590,y:260,a:Math.PI,v:0};
+let trailer={a:Math.PI},running=false,finished=false,level=0,score=0,time=0,penalties=0,padHold=0,frame=0,last=0;
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const near=(a,b)=>Math.atan2(Math.sin(a-b),Math.cos(a-b));
+const pos=(x,y,a,dx,dy)=>({x:x+Math.cos(a)*dx-Math.sin(a)*dy,y:y+Math.sin(a)*dx+Math.cos(a)*dy});
+function hitch(){return pos(truck.x,truck.y,truck.a,-27,0)}
+function trailerCenter(){const p=hitch();return pos(p.x,p.y,trailer.a,-54,0)}
+function corners(x,y,a,w,h){return [pos(x,y,a,w/2,h/2),pos(x,y,a,-w/2,h/2),pos(x,y,a,-w/2,-h/2),pos(x,y,a,w/2,-h/2)]}
+function resetSite(){truck.x=590;truck.y=260;truck.a=Math.PI;truck.v=0;trailer.a=Math.PI;time=0;padHold=0;
+ levelEl.textContent=(level+1)+' / 3';scoreEl.textContent=String(score);
+ status.textContent='Line up, reverse slowly, and settle the whole trailer in the pad.';}
+function begin(){level=0;score=0;penalties=0;finished=false;running=true;START.disabled=true;START.textContent='Run in progress';RESET.disabled=false;resetSite()}
+START.onclick=()=>{if(!running){Arcade.insertCoin(begin,{label:'1 token = 3 campsite attempts'})}};
+RESET.onclick=()=>{if(running){score=Math.max(0,score-85);resetSite();status.textContent='Site reset · 85 point deduction.'}};
+const keys={ArrowLeft:'left',a:'left',A:'left',ArrowRight:'right',d:'right',D:'right',ArrowUp:'forward',w:'forward',W:'forward',ArrowDown:'reverse',s:'reverse',S:'reverse'};
+window.addEventListener('keydown',e=>{if(keys[e.key]){input[keys[e.key]]=true;e.preventDefault()}if(e.key.toLowerCase()==='r'&&running)RESET.click()});
+window.addEventListener('keyup',e=>{if(keys[e.key]){input[keys[e.key]]=false;e.preventDefault()}});
+window.addEventListener('blur',()=>Object.keys(input).forEach(k=>input[k]=false));
+document.querySelectorAll('[data-hold]').forEach(btn=>{
+ const key=btn.dataset.hold;
+ const off=()=>{input[key]=false;btn.classList.remove('held')};
+ btn.addEventListener('pointerdown',e=>{e.preventDefault();btn.setPointerCapture(e.pointerId);input[key]=true;btn.classList.add('held')});
+ ['pointerup','pointercancel','lostpointercapture'].forEach(type=>btn.addEventListener(type,off));
+});
+function drive(dt){
+ if(!running)return;
+ const pad=navigator.getGamepads&&navigator.getGamepads()[0];
+ const steer=clamp((input.right?1:0)-(input.left?1:0)+(pad?(pad.axes[0]||0):0),-1,1);
+ const controller=pad?((pad.buttons[7]?.value||0)-(pad.buttons[6]?.value||0)):0;
+ const throttle=clamp((input.forward?1:0)-(input.reverse?1:0)+controller,-1,1);
+ truck.v+=clamp(throttle*175-truck.v*2.2,-230,230)*dt;
+ if(Math.abs(throttle)<.1)truck.v*=Math.max(0,1-1.2*dt);
+ truck.v=clamp(truck.v,-78,100);
+ const speed=truck.v;
+ truck.a+=speed*steer/65*dt;
+ truck.x+=Math.cos(truck.a)*speed*dt;
+ truck.y+=Math.sin(truck.a)*speed*dt;
+ // Articulated hitch kinematics: the trailer follows the truck's rear pin.
+ trailer.a+=Math.sin(near(truck.a,trailer.a))*speed/72*dt;
+ time+=dt;
+ const c=trailerCenter(),t=sites[level];
+ const obstacle=[...t.trees.map(([x,y])=>({x,y,r:21})),...t.rocks.map(([x,y])=>({x,y,r:16})),...t.crowd.map(([x,y])=>({x,y,r:11}))];
+ let hit=(truck.x<24||truck.x>W-24||truck.y<28||truck.y>H-28||c.x<40||c.x>W-40||c.y<44||c.y>H-44);
+ for(const o of obstacle)if(Math.hypot(truck.x-o.x,truck.y-o.y)<o.r+17||Math.hypot(c.x-o.x,c.y-o.y)<o.r+28)hit=true;
+ if(hit){penalties++;score=Math.max(0,score-22);truck.x-=Math.cos(truck.a)*speed*dt;truck.y-=Math.sin(truck.a)*speed*dt;truck.v=0;
+  if(penalties%3===1)status.textContent='Watch the trees and spectators! −22 points.';}
+ const bay=t.bay;
+ const points=corners(c.x,c.y,trailer.a,104,43);
+ // The pad is vertical. Trailer must fully fit and line up with the long axis.
+ const parked=points.every(p=>p.x>bay.x&&p.x<bay.x+bay.w&&p.y>bay.y&&p.y<bay.y+bay.h)
+   &&Math.abs(Math.sin(trailer.a-bay.a))<.27&&Math.abs(speed)<9;
+ padHold=parked?padHold+dt:0;
+ if(padHold>.8){
+   const gained=Math.max(150,Math.round(1100-time*4-penalties*22));
+   score+=gained;level++;scoreEl.textContent=String(score);
+   if(level>=sites.length){running=false;finished=true;START.disabled=false;START.textContent='Play again · 1 token';RESET.disabled=true;
+     status.textContent='All three sites parked! Final score '+score+'. The lawn-chair judges approve.';
+     Arcade.submitScore(score,'back-it-in');}
+   else{resetSite();status.textContent='Site cleared! +'+gained+' points. Next campsite.';}
+ }
+}
+function polygon(points,color,stroke){ctx.beginPath();points.forEach((p,i)=>i?ctx.lineTo(p.x,p.y):ctx.moveTo(p.x,p.y));ctx.closePath();ctx.fillStyle=color;ctx.fill();if(stroke){ctx.strokeStyle=stroke;ctx.lineWidth=2;ctx.stroke()}}
+function bodyRect(x,y,a,w,h,color,border){polygon(corners(x,y,a,w,h),color,border)}
+function draw(){
+ ctx.clearRect(0,0,W,H);
+ ctx.fillStyle='#39664a';ctx.fillRect(0,0,W,H);
+ for(let x=0;x<W;x+=24)for(let y=0;y<H;y+=24){ctx.fillStyle=(x+y)%48?'#47755233':'#163e2733';ctx.fillRect(x+4,y+4,4,7)}
+ ctx.fillStyle='#837d67';ctx.fillRect(245,0,175,H);
+ ctx.fillStyle='#a79d80';ctx.fillRect(253,0,159,H);
+ ctx.strokeStyle='#eee0ab66';ctx.setLineDash([15,17]);ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(334,0);ctx.lineTo(334,H);ctx.stroke();ctx.setLineDash([]);
+ const t=sites[level]||sites[sites.length-1],b=t.bay;
+ ctx.fillStyle='#967b56';ctx.fillRect(b.x-12,b.y-12,b.w+24,b.h+24);
+ ctx.fillStyle='#c5a37c';ctx.fillRect(b.x,b.y,b.w,b.h);
+ ctx.strokeStyle='#ffdc72';ctx.lineWidth=5;ctx.strokeRect(b.x,b.y,b.w,b.h);
+ ctx.fillStyle='#594e3b';ctx.font='800 13px system-ui';ctx.fillText('SITE '+(level+1),b.x+8,b.y+24);
+ ctx.strokeStyle='#fff0b8';ctx.lineWidth=4;ctx.beginPath();ctx.moveTo(b.x+b.w/2,b.y+b.h-35);ctx.lineTo(b.x+b.w/2,b.y+46);ctx.moveTo(b.x+b.w/2-9,b.y+55);ctx.lineTo(b.x+b.w/2,b.y+46);ctx.lineTo(b.x+b.w/2+9,b.y+55);ctx.stroke();
+ for(const [x,y]of t.trees){ctx.fillStyle='#482d1a';ctx.fillRect(x-5,y+3,11,22);for(let j=0;j<3;j++){ctx.beginPath();ctx.fillStyle=['#194c31','#1d6339','#2c7543'][j];ctx.arc(x+(j-1)*6,y-j*6,20-j*3,0,Math.PI*2);ctx.fill()}}
+ for(const [x,y]of t.rocks){ctx.beginPath();ctx.fillStyle='#5a665c';ctx.ellipse(x,y,18,14,.3,0,Math.PI*2);ctx.fill();ctx.strokeStyle='#d4c8a7';ctx.stroke()}
+ for(const [x,y]of t.crowd){ctx.fillStyle='#bf5c46';ctx.fillRect(x-12,y-8,24,18);ctx.fillStyle='#e1b98e';ctx.beginPath();ctx.arc(x,y-8,7,0,7);ctx.fill();ctx.fillStyle='#3d4146';ctx.fillRect(x-12,y+10,3,8);ctx.fillRect(x+9,y+10,3,8)}
+ const c=trailerCenter(),h=hitch();
+ ctx.strokeStyle='#23292a';ctx.lineWidth=5;ctx.beginPath();ctx.moveTo(h.x,h.y);ctx.lineTo(c.x,c.y);ctx.stroke();
+ bodyRect(c.x,c.y,trailer.a,108,46,'#ece2c8','#433b37');
+ bodyRect(c.x,c.y,trailer.a,83,31,'#a5bdb4','#556864');
+ const w1=pos(c.x,c.y,trailer.a,-26,-28),w2=pos(c.x,c.y,trailer.a,-26,28);
+ for(const w of [w1,w2]){ctx.beginPath();ctx.fillStyle='#1a1b20';ctx.arc(w.x,w.y,9,0,7);ctx.fill()}
+ bodyRect(truck.x,truck.y,truck.a,63,37,'#d5a14b','#38291d');
+ bodyRect(truck.x+Math.cos(truck.a)*11,truck.y+Math.sin(truck.a)*11,truck.a,25,27,'#6d9dad','#274652');
+ const nose=pos(truck.x,truck.y,truck.a,30,0);ctx.fillStyle='#fff2aa';ctx.beginPath();ctx.arc(nose.x,nose.y,4,0,7);ctx.fill();
+ ctx.fillStyle='#14252bcc';ctx.fillRect(16,12,245,41);ctx.fillStyle='#f8e4ae';ctx.font='800 16px system-ui';ctx.fillText('SITE '+(Math.min(level+1,3))+'  •  '+Math.ceil(time)+'s  •  '+score+' PTS',28,39);
+ if(!running){ctx.fillStyle='#111c24d9';ctx.fillRect(155,195,410,105);ctx.textAlign='center';ctx.fillStyle='#ffdb91';ctx.font='900 25px system-ui';ctx.fillText(finished?'CAMPGROUND COMPLETE':'READY TO PARK?',360,239);ctx.font='15px system-ui';ctx.fillText(finished?'Play again to improve your score':'Press Insert token to begin',360,268);ctx.textAlign='left'}
+}
+function tick(now){const dt=Math.max(0,Math.min(.033,last?(now-last)/1000:0));last=now;frame++;
+ if(running)drive(dt);
+ draw();requestAnimationFrame(tick)}
+resetSite();requestAnimationFrame(tick);
+})();
+</script>
+</body></html>

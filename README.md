@@ -14,6 +14,7 @@ A website of original retro-style browser games, live at **[drakeg.github.io/qua
 
 | Game | What it is |
 |---|---|
+| **Back It In** | Reverse a fifth wheel into three increasingly tricky campsites; avoid trees, park within the marked pad, and earn points. |
 | **Stack Shack** | Platform game. Walk across ingredients to drop them onto plates and build four burgers while dodging angry produce. |
 | **Prairie Schooner** | Trail survival strategy. Lead a covered wagon from Missouri to Oregon or California in 1849. Saves progress in the browser. |
 | **Ashfall** | One-on-one fighting game with four elemental fighters, special moves, a CPU arcade ladder, two-player versus and gamepad support. |

@@ -55,7 +55,7 @@ Sprints run one after another; scope changes go through the backlog. Each sprint
 
 **Goal:** Fresh games to bring players back.
 
-- Back It In (reverse a fifth wheel into tight campsites)
+- [x] Back It In: original fifth-wheel parking simulator with keyboard, touch and gamepad, three sites and scores (PR pending CI)
 - Girder Gang (climb girders, dodge rolling barrels)
 - Root Beer Rush (slide mugs down four saloon bars)
 

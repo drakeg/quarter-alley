@@ -19,7 +19,7 @@
     supabaseUrl: 'https://elnvjgphoptaycrneqso.supabase.co',
     supabaseAnonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVsbnZqZ3Bob3B0YXljcm5lcXNvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTQwNzY1OTYsImV4cCI6MjEwOTY1MjU5Nn0.GyIJRN-1J4wdYeQbfuiY5eb1MR4vsbWVNn0sJyAVk2w'
   };
-  const GAMES = ['Arcade home page', 'Stack Shack', 'Prairie Schooner', 'Ashfall', 'Glitch Grid', 'Sunset Circuit', 'Spore Storm', 'Rascal Road', 'Iron Treads', 'Starfall', 'Ridgeline', 'Driftrock', 'Lifeline', 'Canopy Run', 'Spring Brawl', 'Hive Swarm', 'Starting Blocks', 'Burrow Bash', 'Marsh Shot', 'Brickwave', 'Bunker Line', 'Soft Landing', 'Cube Hop', 'Fenceline', 'Lightline', 'Accounts / sign-in', 'Leaderboards'];
+  const GAMES = ['Arcade home page', 'Back It In', 'Stack Shack', 'Prairie Schooner', 'Ashfall', 'Glitch Grid', 'Sunset Circuit', 'Spore Storm', 'Rascal Road', 'Iron Treads', 'Starfall', 'Ridgeline', 'Driftrock', 'Lifeline', 'Canopy Run', 'Spring Brawl', 'Hive Swarm', 'Starting Blocks', 'Burrow Bash', 'Marsh Shot', 'Brickwave', 'Bunker Line', 'Soft Landing', 'Cube Hop', 'Fenceline', 'Lightline', 'Accounts / sign-in', 'Leaderboards'];
   const KEY = 'qa-wallet';
   // A public ?freeplay URL would bypass the token shop. Permit test credits only on loopback hosts.
   const localDev = /^(localhost|127\.0\.0\.1|\[?::1\]?)$/i.test(location.hostname);
@@ -659,7 +659,7 @@
     get isAdmin() { return isAdmin(); }, nextTokenIn, fmtTokens, fmtWait,
     get accountsOn() { return acct.configured; }, get signedIn() { return signedIn(); }, get playerName() { return signedIn() ? displayName() : null; },
     games: [
-      ['stack-shack', 'Stack Shack'], ['prairie-schooner', 'Prairie Schooner'], ['glitch-grid', 'Glitch Grid'], ['sunset-circuit', 'Sunset Circuit'],
+      ['back-it-in', 'Back It In'],       ['stack-shack', 'Stack Shack'], ['prairie-schooner', 'Prairie Schooner'], ['glitch-grid', 'Glitch Grid'], ['sunset-circuit', 'Sunset Circuit'],
       ['spore-storm', 'Spore Storm'], ['rascal-road', 'Rascal Road'], ['iron-treads', 'Iron Treads'], ['starfall', 'Starfall'], ['ridgeline', 'Ridgeline'], ['driftrock', 'Driftrock'], ['lifeline', 'Lifeline'], ['canopy-run', 'Canopy Run'], ['spring-brawl', 'Spring Brawl'], ['hive-swarm', 'Hive Swarm'], ['starting-blocks', 'Starting Blocks'], ['burrow-bash', 'Burrow Bash'], ['marsh-shot', 'Marsh Shot'], ['brickwave', 'Brickwave'], ['bunker-line', 'Bunker Line'], ['soft-landing', 'Soft Landing'], ['cube-hop', 'Cube Hop'], ['fenceline', 'Fenceline'], ['lightline', 'Lightline']
     ]
   };
