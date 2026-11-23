@@ -45,6 +45,7 @@ Sprints run one after another; scope changes go through the backlog. Each sprint
 - [ ] Owner steps: Supabase URL configuration, connect Stripe in test mode, confirm the admin email, custom email sender, review the policy pages
 - [x] Owner decision: guest 2, registered 5, paid 5 + purchased credits, admin unlimited
 - [x] Limit guest browser wallets to 2 free tokens (existing guest balances above 2 are capped)
+- [x] Restrict free-play debugging to localhost/loopback; public URLs always enforce the coin slot (regression test)
 - [x] Implement version-compatible free/bonus wallet code, paid status, refund debt and SQL/browser regression checks (development branch)
 - [ ] Verify staging SQL migration and Stripe test-mode checkout/refund; then deploy the five-free-token server policy (see docs/TOKEN-TIERS.md)
 

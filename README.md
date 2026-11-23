@@ -140,7 +140,7 @@ Every game start goes through `Arcade.insertCoin(callback)` in `assets/arcade.js
 - Guests hold up to **2** free tokens; one returns every 10 minutes. Signed-in wallets currently retain the legacy server cap of 30 until the planned five-free-token SQL migration is deployed. Each page shows when the next one arrives.
 - Admins (set in the database, see `docs/LOGIN.md`) play free and can give tokens to other players.
 - Settings are at the top of `assets/arcade.js` (`maxTokens`, `refillMinutes`, `freePlay`). Keep them in step with the numbers in `supabase/schema.sql`.
-- Add `?freeplay` to any game URL to test without spending tokens.
+- For **local development only** (`localhost`, `127.0.0.1`, or loopback IPv6), add `?freeplay` to a game URL to test without spending tokens. Public deployments ignore this switch.
 - Guests' tokens live in their browser (localStorage), where anyone can edit them. Signed-in players' tokens live on the server, which is the groundwork for selling tokens later.
 
 To gate a new game, include the script and wrap its start:
