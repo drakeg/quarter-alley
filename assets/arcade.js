@@ -653,7 +653,7 @@
     insertCoin, tokens, reportBug, openShop, shopInfo, sendMessage,
     get userEmail() { return (acct.user && acct.user.email) || ''; }, coinSVG, submitScore, topScores, signIn, accountMenu, toast,
     onChange: f => listeners.push(f),
-    get freePlay() { return freePlay; }, get maxTokens() { return CAP; }, get refillMinutes() { return CONFIG.refillMinutes; },
+    get freePlay() { return freePlay; }, get maxTokens() { return signedIn() ? (acct.wallet && typeof acct.wallet.free_tokens === 'number' ? FREE_CAP : CAP) : GUEST_CAP; }, get refillMinutes() { return CONFIG.refillMinutes; },
     get isAdmin() { return isAdmin(); }, nextTokenIn, fmtTokens, fmtWait,
     get accountsOn() { return acct.configured; }, get signedIn() { return signedIn(); }, get playerName() { return signedIn() ? displayName() : null; },
     games: [
