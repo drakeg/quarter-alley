@@ -1,6 +1,19 @@
 -- Quarter Alley: accounts, server-side tokens and scores.
+
+-- Protect migrated wallets from accidental replacement by legacy RPC definitions.
+do $qa_guard$
+begin
+  if exists (select 1 from information_schema.columns
+             where table_schema = 'public' and table_name = 'wallets'
+               and column_name = 'free_tokens') then
+    raise exception 'tiered wallet migration installed: do not rerun legacy %', 'supabase/schema.sql';
+  end if;
+end
+$qa_guard$;
+
 -- Run this once in your Supabase project: Dashboard → SQL Editor → New query → paste → Run.
--- Safe to re-run: it creates what is missing and replaces the functions.
+-- Safe to re-run BEFORE token-tiers.sql. Afterwards, this legacy bootstrap is blocked
+-- so it cannot replace the tiered wallet functions.
 
 -- ---------- tables ----------
 create table if not exists public.profiles (
