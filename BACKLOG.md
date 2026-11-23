@@ -44,7 +44,7 @@ Shipped: ✅ token wallet (30 free, one back every 10 minutes) · ✅ admin acco
 
 | Priority | Game | Pitch | Sprint |
 |---|---|---|---|
-| P1 | **Back It In** | Reverse a fifth wheel into tight campsites while a lawn-chair crowd heckles; trees, slopes and a points-costing pull-through | 3 |
+| P1 | **Back It In** | Reverse a fifth wheel into tight campsites while a lawn-chair crowd heckles; trees, rocks and penalties | 3 (PR in review) |
 | P1 | **Girder Gang** | Climb girders and dodge rolling barrels to reach the top | 3 |
 | P1 | **Root Beer Rush** | Slide mugs down four saloon bars to thirsty cowhands and catch the empties | 3 |
 | P2 | **Flipside** | Full pinball table with flippers, bumpers, ramps and multiball | Later |
