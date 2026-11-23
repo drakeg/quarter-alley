@@ -27,6 +27,7 @@ jobs:
             const expected = [
               'Site checks and browser tests',
               'Docker Compose environment',
+              'Wallet SQL integration',
               'Mad Mallard standards',
               'Analyze JavaScript and TypeScript'
             ];
