@@ -1,4 +1,16 @@
--- Quarter Alley: refunds and the contact inbox. Run after payments.sql. Safe to re-run.
+-- Quarter Alley: refunds and the contact inbox. Run after payments.sql. Safe to re-run BEFORE token-tiers.sql; blocked afterwards.
+
+-- Protect migrated wallets from accidental replacement by legacy RPC definitions.
+do $qa_guard$
+begin
+  if exists (select 1 from information_schema.columns
+             where table_schema = 'public' and table_name = 'wallets'
+               and column_name = 'free_tokens') then
+    raise exception 'tiered wallet migration installed: do not rerun legacy %', 'supabase/support.sql';
+  end if;
+end
+$qa_guard$;
+
 
 -- Refunds: link each purchase to its Stripe payment so a refund can find it.
 alter table public.purchases add column if not exists payment_intent text;

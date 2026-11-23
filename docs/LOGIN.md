@@ -72,7 +72,7 @@ Until a provider is enabled, its button tells players to use the email link inst
 | Tables, security rules, token and score functions | `supabase/schema.sql` |
 | Public leaderboards | `leaderboards/index.html` |
 
-- **Tokens:** everyone holds up to 30 free tokens, and one comes back every 10 minutes until they're full again. Guests keep that balance in their browser; signed-in players keep it on the server, spent one per game through `spend_token()`. Tokens given by an admin can go above 30; refills only top up to 30. Admins never spend tokens.
+- **Tokens:** guests hold up to 2 browser tokens. Until `supabase/token-tiers.sql` is applied, signed-in players retain the legacy 30-token server cap. The migration sets a five-free-token server cap and separates bonus credits from purchases/admin gifts, preserving existing balances. Admins never spend tokens.
 - **Scores:** games call `Arcade.submitScore(score)` at game over. Signed-in players' scores are saved; guests get a prompt to sign in.
 - **Leaderboards:** `top_scores(game)` returns each player's best score for a game, top 10.
 

@@ -1,6 +1,6 @@
 # Token shop (Stripe)
 
-Signed-in players can buy token packs. Bought tokens are added to their server-side wallet, never expire, and stack on top of the free tokens (free tokens still refill only up to 30).
+Signed-in players can buy token packs. Bought tokens are added to the server wallet and never expire. The tier migration in `supabase/token-tiers.sql` separates them from regenerating free credits (cap 5) and tracks spent-credit refund debt; until that migration is deployed, the legacy 30-token wallet behavior remains in effect.
 
 The shop stays hidden on the site until Stripe is connected. Once the two secrets below are set, a **Buy tokens** button appears in the account menu and on the "Out of tokens" screen, with no change to the site needed.
 
@@ -54,7 +54,7 @@ Never put the Stripe secret key or the Supabase service_role key in the site or 
 4. Each Checkout session can only be credited once, so if Stripe re-sends a notice, nobody gets double tokens.
 5. Players can read their own purchases; only the server can write them.
 
-**Refunds and disputes:** when you refund a purchase in Stripe (fully or partly), or a buyer disputes the charge, the webhook calls `refund_purchase()`, which takes back tokens in proportion to the money returned (never below zero). Stripe sends the running refund total, so repeated notices don't take tokens twice. Players see refunds in their purchase history.
+**Refunds and disputes:** when you refund a purchase in Stripe (fully or partly), or a buyer disputes the charge, the webhook calls `refund_purchase()`, which takes back tokens in proportion to the money returned (never below zero). After the tier migration, only bonus credits can be reversed; spent credits become refund debt, not a deduction from regenerating free tokens. Stripe sends the running refund total, so repeated notices don't take tokens twice. Players see refunds in their purchase history.
 
 **Policies:** Terms, Privacy and Refund policy pages are at `legal/terms/`, `legal/privacy/` and `legal/refunds/`, linked from the home page footer and the shop. Stripe asks for these during account activation. Review them before going live; they are a plain-language starting point, not legal advice.
 

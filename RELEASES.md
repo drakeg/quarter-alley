@@ -12,7 +12,9 @@ Quarter Alley uses [Semantic Versioning](https://semver.org) for tagged GitHub r
 
 ## Unreleased
 
-Nothing yet.
+- Guest wallets use a two-token cap (#19, merged).
+- Tiered signed-in wallets (five regenerating free tokens, separate bonus credits, persistent paid status and refund debt) are being developed and tested; **not yet deployed**.
+- Expanded PostgreSQL wallet lifecycle coverage in CI (pending PR checks).
 
 ## [v1.0.0](https://github.com/drakeg/quarter-alley/releases/tag/v1.0.0) — 2026-11-20
 

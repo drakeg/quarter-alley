@@ -1,6 +1,6 @@
 # Token tiers — Sprint 2 implementation contract
 
-Status: implementation planned; **not deployed**. This document is the acceptance contract for the wallet migration, frontend and payment changes.
+Status: server migration, frontend support, and automated SQL/browser tests are implemented in a development PR. **Not deployed or validated with a live Stripe test checkout/refund.** This remains the acceptance contract.
 
 ## Player tiers
 
@@ -46,6 +46,17 @@ A paid account is not a subscription. A first successfully credited Stripe purch
 - A partial refund only reverses the appropriate purchased credits.
 - A signed-in server failure blocks paid gameplay instead of using guest credits.
 - All existing 24 game coin slots and the account menu work on desktop and mobile.
+
+## Migration and staging procedure
+
+1. Take a complete Supabase database backup. Confirm the linked project, backup and restoration path.
+2. Run SQL in this order in an isolated staging project: `supabase/schema.sql`, `supabase/payments.sql`, `supabase/support.sql`, then `supabase/token-tiers.sql`. On an existing deployment, only run the **last** file after confirming the earlier scripts were already applied.
+3. Review `wallets.tokens`, `free_tokens`, `bonus_tokens`, `refund_debt`, `has_purchased` and the purchases ledger before/after migration. Legacy 30-credit balances are preserved as 5 free + 25 bonus credits.
+4. Use Stripe **test-mode** Checkout and webhook retries; test partial/full refunds after bought credits have been spent. Test an admin gift and signed-in/offline wallet behavior.
+5. Deploy the static frontend only after staging checks succeed. The frontend detects the new `get_wallet_details()` RPC and falls back to the existing `get_wallet()` only when the new function is absent.
+6. Once verified, apply the migration to production with a fresh backup and monitor wallet/payment errors. Do **not** reapply older `schema.sql`, `payments.sql` or `support.sql` over the migrated functions afterward: the baseline files still contain legacy functions.
+
+CI runs `supabase/token-tiers.sql` twice against isolated PostgreSQL plus `tests/sql/*` to validate preserved balances, paid state, admin permissions, free-first spending, refill, duplicate purchases, partial refunds, refund debt, and reapplication.
 
 ## Deployment gate
 

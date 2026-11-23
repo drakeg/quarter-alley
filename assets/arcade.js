@@ -26,7 +26,7 @@
   const emit = () => listeners.forEach(f => { try { f(tokens()); } catch (e) {} });
 
   /* ---------- local (guest) wallet ---------- */
-  const CAP = CONFIG.maxTokens, GUEST_CAP = CONFIG.guestMaxTokens, REFILL = CONFIG.refillMinutes * 60000;
+  const CAP = CONFIG.maxTokens, GUEST_CAP = CONFIG.guestMaxTokens, FREE_CAP = 5, REFILL = CONFIG.refillMinutes * 60000;
   let mem = null;
   // Tokens refill one at a time: every REFILL ms, up to CAP. Above CAP (gifts, purchases) nothing is added.
   function regen(tokens, last, now, cap = CAP) {
@@ -56,16 +56,32 @@
   const acct = { configured: !!(CONFIG.supabaseUrl && CONFIG.supabaseAnonKey), client: null, user: null, profile: null, wallet: null, ready: null, error: '' };
   const signedIn = () => !!(acct.client && acct.user);
   const isAdmin = () => !!(signedIn() && acct.wallet && acct.wallet.is_admin);
-  function serverWallet() { // the server is the source of truth; this estimates refills between visits to it
+  function serverWallet() { // only free credits regenerate; purchased credits never suppress refills
     const w = acct.wallet, last = w.last_regen ? Date.parse(w.last_regen) : Date.now();
-    return regen(w.tokens, last, Date.now());
+    if (typeof w.free_tokens === 'number' && typeof w.bonus_tokens === 'number') {
+      const r = regen(w.free_tokens, last, Date.now(), FREE_CAP);
+      return { tokens: r.tokens + w.bonus_tokens, free_tokens: r.tokens,
+        bonus_tokens: w.bonus_tokens, last: r.last, cap: FREE_CAP };
+    }
+    // Compatibility during migration: old Supabase RPCs have a 30-token cap.
+    const r = regen(w.tokens, last, Date.now(), CAP);
+    return { ...r, free_tokens: r.tokens, bonus_tokens: 0, cap: CAP };
   }
-  function tokens() { if (isAdmin()) return Infinity; return signedIn() && acct.wallet ? serverWallet().tokens : read().tokens; }
-  function nextTokenIn() { // ms until the next free token, or null when full or unlimited
+  function tokens() {
+    if (isAdmin()) return Infinity;
+    if (signedIn()) return acct.wallet ? serverWallet().tokens : 0; // never spend a guest wallet on failed account fetch
+    return read().tokens;
+  }
+  function nextTokenIn() { // ms until next FREE token, regardless of purchased balance
     if (freePlay || isAdmin()) return null;
-    let t, last;
-    if (signedIn() && acct.wallet) { const w = serverWallet(); t = w.tokens; last = w.last; } else { const w = read(); t = w.tokens; last = w.last; }
-    return t >= (signedIn() ? CAP : GUEST_CAP) ? null : Math.max(0, last + REFILL - Date.now());
+    let t, last, cap;
+    if (signedIn()) {
+      if (!acct.wallet) return null;
+      const w = serverWallet(); t = w.free_tokens; last = w.last; cap = w.cap;
+    } else {
+      const w = read(); t = w.tokens; last = w.last; cap = GUEST_CAP;
+    }
+    return t >= cap ? null : Math.max(0, last + REFILL - Date.now());
   }
   const fmtTokens = n => n === Infinity ? '∞' : String(n);
   const fmtWait = ms => { const s = Math.ceil(ms / 1000); return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); };
@@ -73,12 +89,26 @@
   async function refreshAccount() {
     if (!acct.client || !acct.user) { acct.profile = null; acct.wallet = null; emit(); return; }
     try {
-      const [w, p] = await Promise.all([acct.client.rpc('get_wallet'), acct.client.from('profiles').select('display_name').eq('id', acct.user.id).maybeSingle()]);
+      const [details, p] = await Promise.all([
+        acct.client.rpc('get_wallet_details'),
+        acct.client.from('profiles').select('display_name').eq('id', acct.user.id).maybeSingle()
+      ]);
+      // Existing production databases may not yet have the additive tier migration.
+      let w = details;
+      if (details.error && (details.error.code === 'PGRST202' ||
+          /get_wallet_details.*(?:not found|schema cache)/i.test(details.error.message || ''))) {
+        w = await acct.client.rpc('get_wallet');
+      }
       if (w.error) throw w.error;
-      acct.wallet = Array.isArray(w.data) ? w.data[0] : w.data;
+      const wallet = Array.isArray(w.data) ? w.data[0] : w.data;
+      if (!wallet || typeof wallet.tokens !== 'number') throw new Error('wallet_unavailable');
+      acct.wallet = wallet;
       acct.profile = p.data || { display_name: null };
       acct.error = '';
-    } catch (e) { acct.error = 'Could not reach the arcade server.'; }
+    } catch (e) {
+      acct.wallet = null; // fail closed: never silently debit guest tokens for a signed-in player
+      acct.error = 'Could not reach the arcade server.';
+    }
     emit();
   }
   if (acct.configured) {
@@ -229,7 +259,20 @@
     const r = await acct.client.rpc('spend_token');
     if (r.error) { const out = /out_of_tokens/.test(r.error.message || ''); throw new Error(out ? 'out' : 'net'); }
     const left = Array.isArray(r.data) ? r.data[0] : r.data;
-    if (acct.wallet) { if (!acct.wallet.is_admin) { acct.wallet.tokens = typeof left === 'number' ? left : Math.max(0, acct.wallet.tokens - 1); if (acct.wallet.tokens < CAP && serverWallet().tokens >= CAP - 1) acct.wallet.last_regen = new Date().toISOString(); } acct.wallet.games_played = (acct.wallet.games_played || 0) + 1; }
+    if (acct.wallet) {
+      if (!acct.wallet.is_admin) {
+        const before = serverWallet();
+        if (typeof acct.wallet.free_tokens === 'number') {
+          if (before.free_tokens > 0) acct.wallet.free_tokens = before.free_tokens - 1;
+          else acct.wallet.bonus_tokens = Math.max(0, before.bonus_tokens - 1);
+          acct.wallet.last_regen = new Date(before.free_tokens >= FREE_CAP ? Date.now() : before.last).toISOString();
+        } else if (before.tokens >= CAP) {
+          acct.wallet.last_regen = new Date().toISOString();
+        }
+        acct.wallet.tokens = typeof left === 'number' ? left : Math.max(0, before.tokens - 1);
+      }
+      acct.wallet.games_played = (acct.wallet.games_played || 0) + 1;
+    }
     emit();
   }
   async function insertCoin(onCredit, opts = {}) {
@@ -237,7 +280,7 @@
     if (freePlay) { onCredit(); return; }
     if (open) return;
     if (acct.ready) { await Promise.race([acct.ready, new Promise(r => setTimeout(r, 2500))]); }
-    const server = signedIn() && !!acct.wallet;
+    const server = signedIn(); // signed-in failures must never fall through to guest wallet
     const n = tokens();
     const outOf = n <= 0;
     const who = server ? `Signed in as ${esc(displayName())}` : (acct.configured && acct.client ? 'Playing as a guest' : '');
@@ -266,7 +309,7 @@
       if (busy || outOf) return; busy = true;
       let paid;
       if (server) paid = spendServer();
-      else { const w = read(); if (w.tokens >= CAP) w.last = Date.now(); w.tokens = Math.max(0, w.tokens - 1); w.played = (w.played || 0) + 1; write(w); paid = Promise.resolve(); }
+      else { const w = read(); if (w.tokens >= GUEST_CAP) w.last = Date.now(); w.tokens = Math.max(0, w.tokens - 1); w.played = (w.played || 0) + 1; write(w); paid = Promise.resolve(); }
       el.querySelector('[data-n]').textContent = fmtTokens(Math.max(0, n - 1));
       const s = el.querySelector('.qa-slit').getBoundingClientRect(), c = coin.getBoundingClientRect();
       const fly = document.createElement('div'); fly.className = 'qa-fly'; fly.innerHTML = coinSVG(58);
@@ -398,6 +441,8 @@
     if (open) return;
     if (!signedIn()) { signIn(); return; }
     const w = acct.wallet || { tokens: 0, games_played: 0 };
+    const tier = isAdmin() ? 'Admin' : w.has_purchased ? 'Paid' : 'Registered';
+    const breakdown = typeof w.free_tokens === 'number' ? serverWallet() : null;
     const m = modal(`<form class="qa-form" aria-labelledby="qa-at" novalidate>
       <h2 id="qa-at">Your account</h2>
       <p style="font-size:14px;color:#cfc6b4">${esc(acct.user.email || '')}</p>
@@ -405,6 +450,7 @@
         <div class="qa-count"><span>${fmtTokens(tokens())}</span><small>${isAdmin() ? 'admin · unlimited' : 'tokens'}</small></div>
         <div class="qa-count"><span>${w.games_played || 0}</span><small>games played</small></div>
       </div>
+      <p>${tier} tier${breakdown ? ` · ${breakdown.free_tokens} free + ${breakdown.bonus_tokens} bonus tokens` : ''}</p>
       <label>Display name on leaderboards<input id="qa-name" maxlength="20" value="${esc(displayName())}"></label>
       <div id="qa-hist" hidden></div>
       <p class="qa-msg" id="qa-amsg" aria-live="polite"></p>
@@ -574,7 +620,11 @@
     const upd = () => {
       const n = tokens(), wait = nextTokenIn();
       b.innerHTML = `${coinSVG(20)}<span>${freePlay ? 'Free play' : n === Infinity ? '∞ Admin' : n + ' token' + (n === 1 ? '' : 's')}</span>`;
-      b.title = n === Infinity ? 'Admin account: unlimited tokens' : wait === null ? `Full. You hold up to ${signedIn() ? CAP : GUEST_CAP} free tokens.` : `Next free token in ${fmtWait(wait)}. One comes back every ${CONFIG.refillMinutes} minutes, up to ${signedIn() ? CAP : GUEST_CAP}.`;
+      const cap = signedIn() && acct.wallet ? serverWallet().cap : GUEST_CAP;
+      b.title = n === Infinity ? 'Admin account: unlimited tokens'
+        : signedIn() && !acct.wallet ? 'Account wallet unavailable. Reconnect before playing.'
+        : wait === null ? `Free balance full (cap ${cap}); bonus credits are kept separately.`
+        : `Next free token in ${fmtWait(wait)}. One returns every ${CONFIG.refillMinutes} minutes (cap ${cap}).`;
     };
     upd(); listeners.push(upd); return b;
   }
@@ -603,7 +653,7 @@
     insertCoin, tokens, reportBug, openShop, shopInfo, sendMessage,
     get userEmail() { return (acct.user && acct.user.email) || ''; }, coinSVG, submitScore, topScores, signIn, accountMenu, toast,
     onChange: f => listeners.push(f),
-    get freePlay() { return freePlay; }, get maxTokens() { return CAP; }, get refillMinutes() { return CONFIG.refillMinutes; },
+    get freePlay() { return freePlay; }, get maxTokens() { return signedIn() ? (acct.wallet && typeof acct.wallet.free_tokens === 'number' ? FREE_CAP : CAP) : GUEST_CAP; }, get refillMinutes() { return CONFIG.refillMinutes; },
     get isAdmin() { return isAdmin(); }, nextTokenIn, fmtTokens, fmtWait,
     get accountsOn() { return acct.configured; }, get signedIn() { return signedIn(); }, get playerName() { return signedIn() ? displayName() : null; },
     games: [

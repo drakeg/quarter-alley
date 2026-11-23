@@ -23,7 +23,7 @@ Every game is an original design with its own name, characters and art. Never us
 | P1 | Purchase history in the account menu | 2 | In review |
 | P2 | Owner: add `charge.refunded` and `charge.dispute.created` to the Stripe webhook events when connecting Stripe | 2 | Waiting on owner |
 | P2 | Email the owner when a contact message arrives (Supabase database webhook or scheduled digest) | Later | Backlog |
-| P0 | Implement four token tiers (guest 2, registered 5, paid 5 + purchases, admin unlimited); preserve existing balances and payment/refund integrity (docs/TOKEN-TIERS.md) | 2 | In progress |
+| P0 | Implement four token tiers (guest 2, registered 5, paid 5 + purchases, admin unlimited); preserve existing balances and payment/refund integrity (docs/TOKEN-TIERS.md) | 2 | Code in review; production migration pending |
 | P1 | Custom email sender (SMTP) in Supabase; the built-in sender only sends a few emails an hour | 2 | Waiting on owner |
 | P1 | Sponsor slots for small businesses (e.g. campgrounds, RV dealers): billboards in Sunset Circuit, cabinet marquees | Later | Backlog |
 | P1 | Supporter tier: unlimited play and cosmetic skins (Stripe subscription) | Later | Backlog |

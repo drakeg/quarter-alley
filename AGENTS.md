@@ -41,7 +41,7 @@ Report test failures accurately; never mark a check as passing without running i
 
 ## Database and functions
 
-- Schema changes go in `supabase/*.sql` (safe to re-run) and are applied to the `quarter-alley` Supabase project as a migration.
+- Schema changes go in `supabase/*.sql` and require isolated SQL tests plus a staging verification before production. Wallet migrations are applied after `schema.sql`, `payments.sql` and `support.sql`; never re-run legacy wallet function files after `token-tiers.sql` without updating them for the new schema. Never run a production migration without a verified database backup.
 - Edge Functions live in `supabase/functions/<name>/index.ts` and are deployed from there. `stripe-webhook` must stay deployed with JWT checks off; it verifies Stripe's signature instead.
 
 ## PR merging

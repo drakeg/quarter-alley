@@ -1,4 +1,16 @@
--- Quarter Alley: token shop (Stripe). Run after schema.sql. Safe to re-run.
+-- Quarter Alley: token shop (Stripe). Run after schema.sql. Safe to re-run BEFORE token-tiers.sql; blocked afterwards.
+
+-- Protect migrated wallets from accidental replacement by legacy RPC definitions.
+do $qa_guard$
+begin
+  if exists (select 1 from information_schema.columns
+             where table_schema = 'public' and table_name = 'wallets'
+               and column_name = 'free_tokens') then
+    raise exception 'tiered wallet migration installed: do not rerun legacy %', 'supabase/payments.sql';
+  end if;
+end
+$qa_guard$;
+
 -- Purchases are written only by the stripe-webhook Edge Function (service role).
 
 create table if not exists public.purchases (
