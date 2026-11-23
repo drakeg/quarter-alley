@@ -12,6 +12,7 @@ permissions:
   contents: write
   pull-requests: write
   checks: read
+  actions: read
 
 jobs:
   merge:
@@ -38,12 +39,41 @@ jobs:
             for (const pr of prs) {
               if (pr.draft || pr.head.repo?.full_name !== `${owner}/${repo}` ||
                   pr.head.sha !== run.head_sha) continue;
-              const checks = await github.paginate(github.rest.checks.listForRef, {
-                owner, repo, ref: pr.head.sha, per_page: 100
-              }, response => response.data.check_runs);
+              // A successful CodeQL workflow can finish before a failing CI workflow.
+              // Require BOTH workflow conclusions for the same immutable PR head SHA.
+              const runsResponse = await github.rest.actions.listWorkflowRunsForRepo({
+                owner, repo, event: 'pull_request', head_sha: pr.head.sha, per_page: 100
+              });
+              const latestRuns = new Map();
+              for (const result of runsResponse.data.workflow_runs || []) {
+                if (!['CI', 'CodeQL'].includes(result.name)) continue;
+                const previous = latestRuns.get(result.name);
+                if (!previous || new Date(result.created_at) > new Date(previous.created_at)) {
+                  latestRuns.set(result.name, result);
+                }
+              }
+              const pendingWorkflows = ['CI', 'CodeQL'].filter(name => {
+                const result = latestRuns.get(name);
+                return result?.status !== 'completed' || result.conclusion !== 'success';
+              });
+              if (pendingWorkflows.length) {
+                core.info(`PR #${pr.number}: workflows not successful: ${pendingWorkflows.join(', ')}`);
+                continue;
+              }
+              // The checks endpoint's response is an object with check_runs; do
+              // not use a pagination map that can produce undefined entries.
+              const checks = [];
+              for (let page = 1; page <= 5; page++) {
+                const result = await github.rest.checks.listForRef({
+                  owner, repo, ref: pr.head.sha, per_page: 100, page
+                });
+                const batch = Array.isArray(result.data) ? result.data : (result.data.check_runs || []);
+                checks.push(...batch);
+                if (batch.length < 100) break;
+              }
               const latest = new Map();
               for (const check of checks) {
-                if (check.app?.slug !== 'github-actions') continue;
+                if (!check || check.app?.slug !== 'github-actions') continue;
                 const previous = latest.get(check.name);
                 if (!previous || new Date(check.started_at || 0) > new Date(previous.started_at || 0)) {
                   latest.set(check.name, check);
