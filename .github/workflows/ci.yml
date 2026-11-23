@@ -43,9 +43,9 @@ jobs:
       - name: Run tier migration and lifecycle assertions in isolated PostgreSQL
         run: |
           docker run -d --name qa-wallet-test -e POSTGRES_PASSWORD=ephemeral postgres:17-alpine
-          trap 'docker rm -f qa-wallet-test >/dev/null 2>&1 || true' EXIT
+          trap 'docker logs --tail 50 qa-wallet-test || true; docker rm -f qa-wallet-test >/dev/null 2>&1 || true' EXIT
           for i in $(seq 1 30); do
-            if docker exec qa-wallet-test pg_isready -U postgres; then break; fi
+            if docker exec qa-wallet-test pg_isready -h 127.0.0.1 -U postgres; then break; fi
             sleep 1
           done
           for file in \
@@ -59,7 +59,7 @@ jobs:
             supabase/token-tiers.sql \
             tests/sql/check-idempotency.sql; do
             echo "Checking $file"
-            docker exec -i qa-wallet-test psql -U postgres -v ON_ERROR_STOP=1 < "$file"
+            docker exec -i qa-wallet-test psql -h 127.0.0.1 -U postgres -v ON_ERROR_STOP=1 < "$file"
           done
 
   compose:
