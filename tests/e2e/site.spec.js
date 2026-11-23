@@ -1,4 +1,5 @@
 const { test, expect } = require('@playwright/test');
+const path = require('node:path');
 const { GAMES, prepare } = require('./helpers');
 
 test('home page shows a cabinet for every game', async ({ page }) => {
@@ -31,6 +32,28 @@ test('coin slot spends a guest token', async ({ page }) => {
   await page.locator('[data-coin]').click();
   await expect.poll(() => page.evaluate(() => window.__started), { timeout: 5000 }).toBe(true);
   expect(await page.evaluate(() => Arcade.tokens())).toBe(1);
+  expect(errors).toEqual([]);
+});
+
+test('free-play URL works locally but cannot bypass tokens on public domains', async ({ page }) => {
+  const errors = await prepare(page);
+  await page.goto('./games/brickwave/?freeplay');
+  expect(await page.evaluate(() => Arcade.freePlay)).toBe(true);
+
+  // Simulate a production hostname without a live network request.
+  await page.route('https://public.example.invalid/**', route => {
+    const pathname = new URL(route.request().url()).pathname;
+    if (pathname === '/games/brickwave/') {
+      return route.fulfill({ path: path.join(__dirname, '../../games/brickwave/index.html'), contentType: 'text/html' });
+    }
+    if (pathname === '/assets/arcade.js') {
+      return route.fulfill({ path: path.join(__dirname, '../../assets/arcade.js'), contentType: 'text/javascript' });
+    }
+    return route.fulfill({ status: 404, body: '' });
+  });
+  await page.goto('https://public.example.invalid/games/brickwave/?freeplay');
+  expect(await page.evaluate(() => Arcade.freePlay)).toBe(false);
+  expect(await page.evaluate(() => Arcade.tokens())).toBe(2);
   expect(errors).toEqual([]);
 });
 
