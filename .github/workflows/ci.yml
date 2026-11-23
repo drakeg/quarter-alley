@@ -33,6 +33,35 @@ jobs:
           path: playwright-report/
           retention-days: 7
 
+
+  wallet_sql:
+    name: Wallet SQL integration
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+      - name: Run tier migration and lifecycle assertions in isolated PostgreSQL
+        run: |
+          docker run -d --name qa-wallet-test -e POSTGRES_PASSWORD=ephemeral postgres:17-alpine
+          trap 'docker rm -f qa-wallet-test >/dev/null 2>&1 || true' EXIT
+          for i in $(seq 1 30); do
+            if docker exec qa-wallet-test pg_isready -U postgres; then break; fi
+            sleep 1
+          done
+          for file in \
+            tests/sql/fixtures.sql \
+            supabase/schema.sql \
+            supabase/payments.sql \
+            supabase/support.sql \
+            tests/sql/legacy-wallets.sql \
+            supabase/token-tiers.sql \
+            tests/sql/check-wallets.sql \
+            supabase/token-tiers.sql \
+            tests/sql/check-idempotency.sql; do
+            echo "Checking $file"
+            docker exec -i qa-wallet-test psql -U postgres -v ON_ERROR_STOP=1 < "$file"
+          done
+
   compose:
     name: Docker Compose environment
     runs-on: ubuntu-latest
