@@ -9,5 +9,5 @@ select public.qa_assert(
    from public.wallets where user_id = '00000000-0000-4000-8000-000000000001'),
   're-running the migration preserves admin and bonus state');
 select public.qa_assert(
-  (select count(*) = 3 from public.purchases),
+  (select count(*) = 4 from public.purchases),
   're-running the migration preserves the purchase ledger');
