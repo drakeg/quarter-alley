@@ -21,7 +21,9 @@
   };
   const GAMES = ['Arcade home page', 'Stack Shack', 'Prairie Schooner', 'Ashfall', 'Glitch Grid', 'Sunset Circuit', 'Spore Storm', 'Rascal Road', 'Iron Treads', 'Starfall', 'Ridgeline', 'Driftrock', 'Lifeline', 'Canopy Run', 'Spring Brawl', 'Hive Swarm', 'Starting Blocks', 'Burrow Bash', 'Marsh Shot', 'Brickwave', 'Bunker Line', 'Soft Landing', 'Cube Hop', 'Fenceline', 'Lightline', 'Accounts / sign-in', 'Leaderboards'];
   const KEY = 'qa-wallet';
-  const freePlay = CONFIG.freePlay || /[?&]freeplay\b/.test(location.search);
+  // A public ?freeplay URL would bypass the token shop. Permit test credits only on loopback hosts.
+  const localDev = /^(localhost|127\.0\.0\.1|\[?::1\]?)$/i.test(location.hostname);
+  const freePlay = localDev && (CONFIG.freePlay || /[?&]freeplay(?:[=&]|$)/.test(location.search));
   const listeners = [];
   const emit = () => listeners.forEach(f => { try { f(tokens()); } catch (e) {} });
 
