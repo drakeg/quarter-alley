@@ -11,7 +11,7 @@
   const CONFIG = {
     maxTokens: 30,        // legacy authenticated server cap until the five-token SQL migration is deployed
     guestMaxTokens: 2,     // guests can hold up to two free tokens
-    refillMinutes: 10,    // one free token comes back every this many minutes, up to maxTokens
+    refillMinutes: 10080, // compatibility accessor; actual reset is Monday 00:00 UTC
     freePlay: false,      // true = no tokens needed anywhere (also: add ?freeplay to a URL)
     repo: 'drakeg/quarter-alley',
     // Accounts: paste your Supabase project URL and anon (public) key to switch sign-in on.
@@ -30,13 +30,10 @@
   /* ---------- local (guest) wallet ---------- */
   const CAP = CONFIG.maxTokens, GUEST_CAP = CONFIG.guestMaxTokens, FREE_CAP = 5, REFILL = CONFIG.refillMinutes * 60000;
   let mem = null;
-  // Tokens refill one at a time: every REFILL ms, up to CAP. Above CAP (gifts, purchases) nothing is added.
+  const WEEK = 7 * 86400000;
+  const weekStart = now => Math.floor((now + 3 * 86400000) / WEEK) * WEEK - 3 * 86400000;
   function regen(tokens, last, now, cap = CAP) {
-    if (tokens >= cap) return { tokens, last: now };
-    const gained = Math.floor((now - last) / REFILL);
-    if (gained <= 0) return { tokens, last };
-    const t = Math.min(cap, tokens + gained);
-    return { tokens: t, last: t >= cap ? now : last + gained * REFILL };
+    return weekStart(last) < weekStart(now) ? { tokens: cap, last: weekStart(now) } : { tokens, last };
   }
   function read() {
     let w = null;
@@ -83,10 +80,10 @@
     } else {
       const w = read(); t = w.tokens; last = w.last; cap = GUEST_CAP;
     }
-    return t >= cap ? null : Math.max(0, last + REFILL - Date.now());
+    return t >= cap ? null : Math.max(0, weekStart(Date.now()) + WEEK - Date.now());
   }
   const fmtTokens = n => n === Infinity ? '∞' : String(n);
-  const fmtWait = ms => { const s = Math.ceil(ms / 1000); return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); };
+  const fmtWait = ms => { const s = Math.ceil(ms / 1000); return Math.floor(s / 86400) + 'd ' + Math.floor(s % 86400 / 3600) + 'h ' + Math.floor(s % 3600 / 60) + 'm'; };
   function loadScript(src) { return new Promise((res, rej) => { const s = document.createElement('script'); s.src = src; s.onload = res; s.onerror = () => rej(new Error('load')); document.head.appendChild(s); }); }
   async function refreshAccount() {
     if (!acct.client || !acct.user) { acct.profile = null; acct.wallet = null; emit(); return; }
@@ -288,7 +285,7 @@
     const who = server ? `Signed in as ${esc(displayName())}` : (acct.configured && acct.client ? 'Playing as a guest' : '');
     const m = modal(`<div class="qa-door ${outOf ? '' : 'qa-ready'}" aria-labelledby="qa-t">
         <p class="qa-marq" id="qa-t">${outOf ? 'OUT OF TOKENS' : 'INSERT TOKEN'}</p>
-        <p class="qa-sub" data-wait>${outOf ? `Next free token in ${fmtWait(nextTokenIn() || REFILL)}.` : esc(opts.label || '1 token = 1 game')}</p>
+        <p class="qa-sub" data-wait>${outOf ? `Weekly free allowance resets in ${fmtWait(nextTokenIn() || REFILL)}.` : esc(opts.label || '1 token = 1 game')}</p>
         <div class="qa-slots">
           <button type="button" class="qa-slot ${outOf ? 'qa-off' : ''}" data-slot aria-label="Coin slot: insert a token"><span class="qa-slit"></span><span class="qa-lamp">1 TOKEN<small>PUSH</small></span></button>
           <button type="button" class="qa-slot qa-off" tabindex="-1" aria-hidden="true" disabled><span class="qa-slit"></span><span class="qa-lamp">1 TOKEN<small>PLAYER 2</small></span></button>
@@ -325,7 +322,7 @@
         try { await paid; }
         catch (e) {
           const note = el.querySelector('[data-note]'); note.className = 'qa-sub qa-err';
-          note.textContent = e.message === 'out' ? 'Your account is out of tokens. One comes back every ' + CONFIG.refillMinutes + ' minutes.' : 'Could not reach the arcade server. Check your connection and try again.';
+          note.textContent = e.message === 'out' ? 'Your account is out of tokens. Free allowance resets Monday at midnight UTC.' : 'Could not reach the arcade server. Check your connection and try again.';
           coin.style.visibility = ''; busy = false; el.querySelector('[data-n]').textContent = fmtTokens(tokens()); return;
         }
         slot.classList.add('qa-hot');
@@ -364,7 +361,7 @@
       const tick = setInterval(() => {
         if (!el.isConnected) { clearInterval(tick); return; }
         if (tokens() > 0) { clearInterval(tick); m.close(); insertCoin(onCredit, opts); return; }
-        el.querySelector('[data-wait]').textContent = `Next free token in ${fmtWait(nextTokenIn() || REFILL)}.`;
+        el.querySelector('[data-wait]').textContent = `Weekly free allowance resets in ${fmtWait(nextTokenIn() || REFILL)}.`;
       }, 1000);
     }
   }
@@ -626,7 +623,7 @@
       b.title = n === Infinity ? 'Admin account: unlimited tokens'
         : signedIn() && !acct.wallet ? 'Account wallet unavailable. Reconnect before playing.'
         : wait === null ? `Free balance full (cap ${cap}); bonus credits are kept separately.`
-        : `Next free token in ${fmtWait(wait)}. One returns every ${CONFIG.refillMinutes} minutes (cap ${cap}).`;
+        : `Weekly free allowance resets in ${fmtWait(wait)}. Monday 00:00 UTC (cap ${cap}).`;
     };
     upd(); listeners.push(upd); return b;
   }

@@ -105,14 +105,14 @@ test('signed-in account errors never silently spend the guest wallet', async ({ 
   expect(errors).toEqual([]);
 });
 
-test('free token refill is independent of purchased token balance', async ({ page }) => {
+test('weekly free reset is independent of purchased token balance', async ({ page }) => {
   const errors = await prepare(page);
   await page.addInitScript(() => {
     const chain = new Proxy({}, { get: (_, k) => k === 'then' ? (resolve) => resolve({ data: { display_name: 'Paying player' } }) : k === 'maybeSingle' ? async () => ({ data: { display_name: 'Paying player' } }) : () => chain });
     window.supabase = { createClient: () => ({
       auth: { getSession: async () => ({ data: { session: { user: { id: 'paid-player', email: 'paid@example.com' } } } }), onAuthStateChange: () => {} },
       rpc: async (n) => n === 'get_wallet_details'
-        ? { data: [{ tokens: 8, free_tokens: 1, bonus_tokens: 7, games_played: 0, is_admin: false, has_purchased: true, refund_debt: 0, last_regen: new Date(Date.now() - 3600000).toISOString() }] }
+        ? { data: [{ tokens: 8, free_tokens: 1, bonus_tokens: 7, games_played: 0, is_admin: false, has_purchased: true, refund_debt: 0, last_regen: new Date(Date.now() - 7 * 86400000).toISOString() }] }
         : { data: 0 },
       from: () => chain,
     }) };
@@ -122,4 +122,15 @@ test('free token refill is independent of purchased token balance', async ({ pag
   await expect.poll(() => page.evaluate(() => Arcade.tokens())).toBe(12); // 5 free + 7 purchased
   expect(await page.evaluate(() => Arcade.nextTokenIn())).toBeNull();
   expect(errors).toEqual([]);
+});
+
+ test('guest allowance does not refill after ten minutes and resets on Monday UTC', async ({ page }) => {
+  await prepare(page);
+  await page.clock.install({ time: new Date('2026-11-29T23:40:00Z') });
+  await page.goto('./');
+  await page.evaluate(() => localStorage.setItem('qa-wallet', JSON.stringify({ tokens: 0, last: Date.now(), played: 2 })));
+  await page.clock.fastForward(11 * 60000);
+  expect(await page.evaluate(() => Arcade.tokens())).toBe(0);
+  await page.clock.fastForward(9 * 60000);
+  expect(await page.evaluate(() => Arcade.tokens())).toBe(2);
 });
