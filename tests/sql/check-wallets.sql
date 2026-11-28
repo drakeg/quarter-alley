@@ -30,7 +30,7 @@ select public.qa_assert(
   (select free_tokens = 4 and bonus_tokens = 25 and tokens = 29
    from public.wallets where user_id = '00000000-0000-4000-8000-000000000001'),
   'spending consumes free before purchased');
-update public.wallets set last_regen = now() - interval '20 minutes'
+update public.wallets set last_regen = now() - interval '7 days'
 where user_id = '00000000-0000-4000-8000-000000000001';
 set role authenticated;
 select * from public.get_wallet_details();
@@ -38,7 +38,19 @@ reset role;
 select public.qa_assert(
   (select free_tokens = 5 and bonus_tokens = 25 and tokens = 30
    from public.wallets where user_id = '00000000-0000-4000-8000-000000000001'),
-  'free credits refill despite large bonus balance');
+  'weekly free credits reset despite large bonus balance');
+
+-- Within the same UTC week, a depleted balance must not regenerate.
+update public.wallets set free_tokens = 0, tokens = bonus_tokens,
+  last_regen = date_trunc('week', now() at time zone 'UTC') at time zone 'UTC'
+where user_id = '00000000-0000-4000-8000-000000000001';
+set role authenticated;
+select * from public.get_wallet_details();
+reset role;
+select public.qa_assert(
+  (select free_tokens = 0 and bonus_tokens = 25 and tokens = 25
+   from public.wallets where user_id = '00000000-0000-4000-8000-000000000001'),
+  'no refill within current UTC week');
 
 -- When free balance is zero, the next game consumes a bonus token.
 update public.wallets set free_tokens = 0, tokens = bonus_tokens, last_regen = now()
