@@ -51,6 +51,8 @@ Sprints run one after another; scope changes go through the backlog. Each sprint
 
 **Acceptance:** A test-mode purchase on the live site credits tokens; a refund removes them; the policy pages are live.
 
+- [ ] Weekly server-side allowance: Monday 00:00 UTC, no intraweek refill; preserve purchased credits (PR #25)
+
 ## Sprint 3 — New cabinets
 
 **Goal:** Fresh games to bring players back.

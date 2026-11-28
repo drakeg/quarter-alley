@@ -16,7 +16,7 @@ A paid account is not a subscription. A first successfully credited Stripe purch
 ## Balance and refill invariants
 
 - Store `free_tokens` and `bonus_tokens` (purchases and admin gifts) separately; return a total `tokens` for compatibility with existing clients.
-- Refill **only** `free_tokens`, one token every ten minutes, up to five for authenticated players. Guests refill only to two.
+- Reset **only** `free_tokens` each Monday at 00:00 UTC to five for authenticated players and two for guests. Unused free tokens do not accumulate; bonus balances never expire.
 - Consume free credits before bonus credits. A purchase or gift must never prevent free-credit regeneration.
 - Admin games increment `games_played` but deduct neither balance.
 - Never migrate a wallet by blindly truncating its old `tokens` value. Preserve old balance above the new five-token free cap as bonus credits; preserve payment history.
@@ -37,7 +37,7 @@ A paid account is not a subscription. A first successfully credited Stripe purch
 ## Acceptance cases
 
 - Fresh guest starts at 2, cannot exceed 2 by regeneration; guest play deducts one.
-- Fresh registered account starts at 5 and refills toward 5 only.
+- Fresh registered account starts at 5 and resets to 5 on Monday UTC only.
 - Paid account starts with five free tokens plus purchased tokens; purchased tokens remain after free refill.
 - After all purchased tokens are spent, paid status remains.
 - Admin never spends credits, even with zero balances.
