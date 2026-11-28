@@ -54,23 +54,14 @@ end $$;
 create or replace function public.get_wallet()
 returns table (tokens integer, games_played integer, is_admin boolean, last_regen timestamptz)
 language plpgsql security definer set search_path = public as $$
-declare w public.wallets; gained integer;
+declare w public.wallets;
 begin
   if auth.uid() is null then raise exception 'not_signed_in'; end if;
   insert into public.wallets (user_id) values (auth.uid()) on conflict do nothing;
   select * into w from public.wallets x where x.user_id = auth.uid() for update;
-  if w.free_tokens >= 5 then
-    update public.wallets x set last_regen = now() where x.user_id = auth.uid();
-  else
-    gained := greatest(0, floor(extract(epoch from (now() - w.last_regen)) / 600)::integer);
-    if gained > 0 then
-      update public.wallets x set
-        free_tokens = least(5, w.free_tokens + gained),
-        tokens = least(5, w.free_tokens + gained) + w.bonus_tokens,
-        last_regen = case when w.free_tokens + gained >= 5
-          then now() else w.last_regen + gained * interval '10 minutes' end
-      where x.user_id = auth.uid();
-    end if;
+  if date_trunc('week', w.last_regen at time zone 'UTC') < date_trunc('week', now() at time zone 'UTC') then
+    update public.wallets x set free_tokens = 5, tokens = 5 + w.bonus_tokens,
+      last_regen = now() where x.user_id = auth.uid();
   end if;
   return query
     select x.tokens, x.games_played, x.is_admin, x.last_regen
